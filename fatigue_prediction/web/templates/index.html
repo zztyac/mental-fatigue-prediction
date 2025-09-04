@@ -1,0 +1,1273 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 金属多轴疲劳寿命预测系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 现代化全局样式 */
+    body {
+        scroll-behavior: smooth;
+    }
+    
+    /* 粒子背景效果 */
+    .particles-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+    }
+    
+    /* 玻璃态卡片效果 */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+    }
+    
+    /* 渐变背景标题 */
+    .gradient-title {
+        background: linear-gradient(90deg, #3498db, #9b59b6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+    
+    /* 发光效果 */
+    .glow-effect {
+        position: relative;
+    }
+    
+    .glow-effect:after {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        z-index: -1;
+        background: radial-gradient(circle, rgba(66, 153, 225, 0.4) 0%, rgba(66, 153, 225, 0) 70%);
+        opacity: 0;
+        transition: opacity 0.5s;
+        border-radius: 24px;
+        filter: blur(15px);
+    }
+    
+    .glow-effect:hover:after {
+        opacity: 1;
+    }
+    
+    /* 炫酷图标容器 */
+    .icon-container {
+        width: 60px;
+        height: 60px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        position: relative;
+        transition: all 0.3s ease;
+        z-index: 1;
+        overflow: hidden;
+    }
+    
+    .icon-container:before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        z-index: -1;
+        transition: all 0.3s ease;
+        opacity: 0;
+        border-radius: 18px;
+    }
+    
+    .icon-container:hover {
+        transform: translateY(-5px);
+        color: white;
+    }
+    
+    .icon-container:hover:before {
+        opacity: 1;
+    }
+    
+    .icon-container i {
+        transition: all 0.3s ease;
+    }
+    
+    .icon-container:hover i {
+        transform: scale(1.2);
+        color: white;
+    }
+    
+    /* 3D效果卡片 */
+    .card-3d {
+        transition: all 0.3s ease;
+        transform-style: preserve-3d;
+        perspective: 1000px;
+    }
+    
+    .card-3d:hover {
+        transform: rotateY(5deg) rotateX(5deg);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07);
+    }
+    
+    /* 磁性按钮 */
+    .magnetic-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 28px;
+        background: linear-gradient(90deg, #4A6CF7, #5E83FB);
+        color: white;
+        font-weight: 600;
+        border-radius: 12px;
+        border: none;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        z-index: 1;
+        box-shadow: 0 6px 15px rgba(74, 108, 247, 0.3);
+    }
+    
+    .magnetic-btn:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, #5E83FB, #4A6CF7);
+        z-index: -1;
+        transition: opacity 0.3s ease;
+        opacity: 0;
+    }
+    
+    .magnetic-btn:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 10px 20px rgba(74, 108, 247, 0.4);
+    }
+    
+    .magnetic-btn:hover:before {
+        opacity: 1;
+    }
+    
+    .magnetic-btn i {
+        margin-right: 8px;
+        transition: transform 0.3s ease;
+    }
+    
+    .magnetic-btn:hover i {
+        transform: translateX(-3px);
+    }
+    
+    /* 数字动画效果 */
+    .animate-number {
+        font-weight: 700;
+        font-size: 2rem;
+        color: #3498db;
+        display: inline-block;
+    }
+    
+    /* 波浪分隔线 */
+    .wave-divider {
+        position: relative;
+        height: 80px;
+        overflow: hidden;
+    }
+    
+    .wave-divider svg {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        bottom: 0;
+        left: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="particles-background" id="particles-js"></div>
+
+<div class="container py-5">
+    <!-- 创新横幅设计 -->
+    <div class="row mb-5">
+        <div class="col-12" data-aos="zoom-in" data-aos-duration="800">
+            <div class="glass-card overflow-hidden glow-effect">
+                    <div class="row g-0">
+                    <div class="col-lg-6 p-5 d-flex flex-column justify-content-center position-relative">
+                        <div class="position-absolute" style="width: 150px; height: 150px; background: radial-gradient(#4A6CF7, transparent 70%); top: -50px; left: -50px; border-radius: 50%; filter: blur(50px); opacity: 0.3;"></div>
+                        
+                        <h1 class="display-4 fw-bold mb-3 gradient-title">金属多轴疲劳<br>寿命智能预测</h1>
+                        <p class="lead mb-4 text-secondary">基于先进深度学习技术的高精度分析与预测平台</p>
+                        
+                        <div class="d-flex gap-3 mt-2">
+                            <a href="{{ url_for('predict') }}" class="magnetic-btn">
+                                <i class="fas fa-chart-line"></i>立即预测
+                            </a>
+                            <a href="{{ url_for('train') }}" class="magnetic-btn" style="background: linear-gradient(90deg, #2ecc71, #1abc9c);">
+                                <i class="fas fa-graduation-cap"></i>训练模型
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 p-0 position-relative overflow-hidden">
+                        <div id="hero-3d-model" class="w-100 h-100" style="min-height: 400px; background: linear-gradient(135deg, #4A6CF7 0%, #9C6DF3 100%); border-radius: 0 16px 16px 0;">
+                            <!-- 3D模型或动画将通过JS加载 -->
+                            <div class="position-absolute top-50 start-50 translate-middle w-75 h-75">
+                                <div id="performance-chart" class="w-100 h-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关键指标动画显示 -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="glass-card p-0 overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-md-3 key-metric-item" data-aos="fade-right" data-aos-delay="100">
+                        <div class="d-flex flex-column align-items-center justify-content-center p-4">
+                            <div class="icon-container mb-3">
+                                <i class="fas fa-bullseye fa-2x text-primary"></i>
+                            </div>
+                            <div class="animate-number" data-target="90">0</div>
+                            <div class="text-uppercase fw-bold mt-2 text-center">预测精度 %</div>
+                            <div class="mt-2 small text-muted text-center">高于传统方法15%</div>
+                                </div>
+                                </div>
+                    <div class="col-md-3 key-metric-item" data-aos="fade-right" data-aos-delay="200">
+                        <div class="d-flex flex-column align-items-center justify-content-center p-4">
+                            <div class="icon-container mb-3">
+                                <i class="fas fa-layer-group fa-2x text-success"></i>
+                            </div>
+                            <div class="animate-number" data-target="40">0</div>
+                            <div class="text-uppercase fw-bold mt-2 text-center">支持材料种类</div>
+                            <div class="mt-2 small text-muted text-center">持续扩展中</div>
+                                        </div>
+                                    </div>
+                    <div class="col-md-3 key-metric-item" data-aos="fade-right" data-aos-delay="300">
+                        <div class="d-flex flex-column align-items-center justify-content-center p-4">
+                            <div class="icon-container mb-3">
+                                <i class="fas fa-bolt fa-2x text-warning"></i>
+                                </div>
+                            <div class="animate-number" data-target="500">0</div>
+                            <div class="text-uppercase fw-bold mt-2 text-center">毫秒处理速度</div>
+                            <div class="mt-2 small text-muted text-center">批量高效预测</div>
+                                        </div>
+                                    </div>
+                    <div class="col-md-3 key-metric-item" data-aos="fade-right" data-aos-delay="400">
+                        <div class="d-flex flex-column align-items-center justify-content-center p-4">
+                            <div class="icon-container mb-3">
+                                <i class="fas fa-database fa-2x text-danger"></i>
+                            </div>
+                            <div class="animate-number" data-target="1167">0</div>
+                            <div class="text-uppercase fw-bold mt-2 text-center">样本数据量</div>
+                            <div class="mt-2 small text-muted text-center">精心标注的高质量数据</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统特点创新展示 -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4" data-aos="fade-up">
+            <h2 class="gradient-title display-5 mb-3">系统特点</h2>
+            <p class="text-secondary mb-5">结合先进深度学习技术，提供专业的多轴疲劳寿命预测</p>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4" data-aos="flip-left" data-aos-delay="100" data-aos-duration="800">
+            <div class="card-3d h-100 glass-card border-0">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-container mx-auto mb-3">
+                        <i class="fas fa-database fa-2x text-primary"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mb-3">智能数据处理</h5>
+                    <p class="card-text text-secondary">自动处理多轴疲劳实验数据，支持多种格式和材料类型</p>
+                    
+                    <div class="mt-4 feature-animation">
+                        <div class="data-processing-animation">
+                            <!-- 这里将通过JS动画展示数据处理流 -->
+                            <div id="data-flow-vis" style="height: 60px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4" data-aos="flip-left" data-aos-delay="200" data-aos-duration="800">
+            <div class="card-3d h-100 glass-card border-0">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-container mx-auto mb-3">
+                        <i class="fas fa-brain fa-2x text-success"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mb-3">深度学习模型</h5>
+                    <p class="card-text text-secondary">基于Transformer的深度学习架构，捕捉复杂非线性关系</p>
+                    
+                    <div class="mt-4 feature-animation">
+                        <div class="neural-network-animation">
+                            <!-- 这里将通过JS动画展示神经网络连接 -->
+                            <div id="mini-network-vis" style="height: 60px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4" data-aos="flip-left" data-aos-delay="300" data-aos-duration="800">
+            <div class="card-3d h-100 glass-card border-0">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-container mx-auto mb-3">
+                        <i class="fas fa-chart-line fa-2x text-warning"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mb-3">高精度预测</h5>
+                    <p class="card-text text-secondary">多种评估指标综合分析，提供高可信度的寿命预测结果</p>
+                    
+                    <div class="mt-4 feature-animation">
+                        <div class="accuracy-animation">
+                            <!-- 这里将通过JS动画展示准确度提升 -->
+                            <div id="accuracy-meter" style="height: 60px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-4" data-aos="flip-left" data-aos-delay="400" data-aos-duration="800">
+            <div class="card-3d h-100 glass-card border-0">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-container mx-auto mb-3">
+                        <i class="fas fa-chart-pie fa-2x text-danger"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mb-3">可视化分析</h5>
+                    <p class="card-text text-secondary">多维数据可视化展示，直观呈现预测结果和材料比较</p>
+                    
+                    <div class="mt-4 feature-animation">
+                        <div class="visualization-animation">
+                            <!-- 这里将通过JS动画展示数据可视化 -->
+                            <div id="mini-chart-vis" style="height: 60px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 波浪分隔线 -->
+    <div class="wave-divider mb-5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+            <path fill="#4A6CF7" fill-opacity="0.1" d="M0,160L48,160C96,160,192,160,288,170.7C384,181,480,203,576,192C672,181,768,139,864,138.7C960,139,1056,181,1152,186.7C1248,192,1344,160,1392,144L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+    </div>
+
+    <!-- 交互式快速开始区域 -->
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4" data-aos="fade-up">
+            <h2 class="gradient-title display-5 mb-3">快速开始</h2>
+            <p class="text-secondary mb-5">通过直观的流程，快速体验金属疲劳寿命预测的全过程</p>
+                </div>
+        
+        <div class="col-12" data-aos="fade-up">
+            <div class="glass-card p-5 position-relative overflow-hidden">
+                <!-- 背景装饰 -->
+                <div class="position-absolute" style="width: 300px; height: 300px; background: radial-gradient(#4A6CF7, transparent 70%); top: -150px; right: -150px; border-radius: 50%; filter: blur(80px); opacity: 0.1;"></div>
+                
+                <!-- 交互式步骤指引 -->
+                <div class="interactive-steps position-relative">
+                    <div class="row">
+                        <div class="col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+                            <div class="step-card card-3d glass-card h-100 position-relative">
+                                <!-- 步骤编号 -->
+                                <div class="step-number position-absolute" style="top: -20px; right: -20px; width: 50px; height: 50px; background: linear-gradient(135deg, #4A6CF7, #9C6DF3); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; box-shadow: 0 8px 15px rgba(74, 108, 247, 0.3);">1</div>
+                                
+                                <div class="card-body p-4">
+                                    <div class="icon-container mb-4 mx-auto">
+                                        <i class="fas fa-graduation-cap fa-2x text-primary"></i>
+                                </div>
+                                    <h4 class="card-title fw-bold text-center mb-3">训练模型</h4>
+                                    <p class="card-text text-secondary mb-4">基于数据，训练高精度的疲劳寿命预测模型</p>
+                                    
+                                    <ul class="feature-list ps-0 mb-4">
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>支持多种实验数据</span>
+                                        </li>
+                                        <li class="d-flex align-items-center">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>自定义训练参数</span>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="text-center">
+                                        <a href="{{ url_for('train') }}" class="magnetic-btn w-100" style="background: linear-gradient(90deg, #4A6CF7, #9C6DF3);">
+                                            <i class="fas fa-play-circle"></i>开始训练
+                                        </a>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="200">
+                            <div class="step-card card-3d glass-card h-100 position-relative">
+                                <!-- 步骤编号 -->
+                                <div class="step-number position-absolute" style="top: -20px; right: -20px; width: 50px; height: 50px; background: linear-gradient(135deg, #f39c12, #e67e22); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; box-shadow: 0 8px 15px rgba(243, 156, 18, 0.3);">2</div>
+                                
+                                <div class="card-body p-4">
+                                    <div class="icon-container mb-4 mx-auto">
+                                        <i class="fas fa-chart-line fa-2x text-warning"></i>
+                                </div>
+                                    <h4 class="card-title fw-bold text-center mb-3">寿命预测</h4>
+                                    <p class="card-text text-secondary mb-4">使用训练好的模型，预测金属材料的疲劳寿命</p>
+                                    
+                                    <ul class="feature-list ps-0 mb-4">
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>批量预测多种材料</span>
+                                        </li>
+                                        <li class="d-flex align-items-center">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>提供多种评估指标</span>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="text-center">
+                                        <a href="{{ url_for('predict') }}" class="magnetic-btn w-100" style="background: linear-gradient(90deg, #f39c12, #e67e22);">
+                                            <i class="fas fa-search"></i>开始预测
+                                        </a>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="300">
+                            <div class="step-card card-3d glass-card h-100 position-relative">
+                                <!-- 步骤编号 -->
+                                <div class="step-number position-absolute" style="top: -20px; right: -20px; width: 50px; height: 50px; background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; box-shadow: 0 8px 15px rgba(39, 174, 96, 0.3);">3</div>
+                                
+                                <div class="card-body p-4">
+                                    <div class="icon-container mb-4 mx-auto">
+                                        <i class="fas fa-balance-scale fa-2x text-success"></i>
+                                    </div>
+                                    <h4 class="card-title fw-bold text-center mb-3">模型对比</h4>
+                                    <p class="card-text text-secondary mb-4">对比不同模型的性能指标，选择最优预测方案</p>
+                                    
+                                    <ul class="feature-list ps-0 mb-4">
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>多模型性能对比</span>
+                                        </li>
+                                        <li class="d-flex align-items-center">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>详细评估报告</span>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="text-center">
+                                        <a href="{{ url_for('model_comparison') }}" class="magnetic-btn w-100" style="background: linear-gradient(90deg, #27ae60, #2ecc71);">
+                                            <i class="fas fa-chart-bar"></i>模型对比
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="400">
+                            <div class="step-card card-3d glass-card h-100 position-relative">
+                                <!-- 步骤编号 -->
+                                <div class="step-number position-absolute" style="top: -20px; right: -20px; width: 50px; height: 50px; background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; box-shadow: 0 8px 15px rgba(231, 76, 60, 0.3);">4</div>
+                                
+                                <div class="card-body p-4">
+                                    <div class="icon-container mb-4 mx-auto">
+                                        <i class="fas fa-tachometer-alt fa-2x text-danger"></i>
+                                </div>
+                                    <h4 class="card-title fw-bold text-center mb-3">可视化大屏</h4>
+                                    <p class="card-text text-secondary mb-4">多维可视化展示预测结果，直观分析材料性能</p>
+                                    
+                                    <ul class="feature-list ps-0 mb-4">
+                                        <li class="d-flex align-items-center mb-2">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>材料性能对比</span>
+                                        </li>
+                                        <li class="d-flex align-items-center">
+                                            <span class="feature-icon me-2"><i class="fas fa-check-circle text-success"></i></span>
+                                            <span>寿命趋势分析</span>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="text-center">
+                                        <a href="{{ url_for('dashboard') }}" class="magnetic-btn w-100" style="background: linear-gradient(90deg, #e74c3c, #c0392b);">
+                                            <i class="fas fa-eye"></i>查看大屏
+                                        </a>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 连接线 -->
+                    <div class="step-connector d-none d-lg-block position-absolute" style="height: 3px; background: linear-gradient(90deg, #4A6CF7, #e67e22); top: 120px; left: 20%; width: 60%; z-index: -1;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 技术优势交互式展示 -->
+    <div class="row mb-5" data-aos="fade-up">
+        <div class="col-12">
+            <div class="glass-card overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-lg-6 p-5 d-flex flex-column justify-content-center" data-aos="fade-right">
+                        <h2 class="gradient-title mb-4">基于Transformer的<br>深度学习架构</h2>
+                        <p class="lead text-secondary mb-4">采用先进的Transformer网络架构，有效捕捉多轴疲劳数据中的时序依赖和材料特性，为预测提供坚实基础。</p>
+                        
+                        <div class="tech-features">
+                            <div class="tech-feature d-flex p-3 mb-3 glass-card align-items-center" data-aos="fade-up" data-aos-delay="100">
+                                <div class="tech-icon me-3">
+                                    <div class="icon-container">
+                                        <i class="fas fa-brain text-primary"></i>
+                </div>
+                                </div>
+                                <div class="tech-content">
+                                    <h5 class="mb-1">多头注意力机制</h5>
+                                    <p class="mb-0 text-secondary">从多个角度分析加载时序数据，识别关键影响因素</p>
+                                </div>
+                            </div>
+                            
+                            <div class="tech-feature d-flex p-3 mb-3 glass-card align-items-center" data-aos="fade-up" data-aos-delay="200">
+                                <div class="tech-icon me-3">
+                                    <div class="icon-container">
+                                        <i class="fas fa-code-branch text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="tech-content">
+                                    <h5 class="mb-1">特征融合能力</h5>
+                                    <p class="mb-0 text-secondary">有效结合时序数据和材料静态特征，提高预测精度</p>
+                                </div>
+                            </div>
+                            
+                            <div class="tech-feature d-flex p-3 glass-card align-items-center" data-aos="fade-up" data-aos-delay="300">
+                                <div class="tech-icon me-3">
+                                    <div class="icon-container">
+                                        <i class="fas fa-bolt text-primary"></i>
+                            </div>
+                        </div>
+                                <div class="tech-content">
+                                    <h5 class="mb-1">并行计算效率</h5>
+                                    <p class="mb-0 text-secondary">高效处理大规模数据，实现毫秒级预测响应速度</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6 bg-light position-relative overflow-hidden" data-aos="fade-left">
+                        <!-- 3D模型展示区域 -->
+                        <div class="position-relative w-100 h-100" style="min-height: 500px;">
+                            <div id="tech-advantage-wrapper" class="w-100 h-100 position-relative">
+                                <div id="tech-advantage-chart" class="w-100 h-100"></div>
+                                
+                                <!-- 3D模型罩层效果 -->
+                                <div class="model-overlay position-absolute top-0 left-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(74, 108, 247, 0.2) 0%, rgba(156, 109, 243, 0.2) 100%); mix-blend-mode: overlay; z-index: 1;"></div>
+                                
+                                <!-- 浮动装饰元素 -->
+                                <div class="floating-element position-absolute" style="width: 80px; height: 80px; border-radius: 40px; background: linear-gradient(135deg, rgba(74, 108, 247, 0.6) 0%, rgba(156, 109, 243, 0.6) 100%); top: 10%; left: 15%; filter: blur(15px); animation: float1 6s ease-in-out infinite;"></div>
+                                
+                                <div class="floating-element position-absolute" style="width: 60px; height: 60px; border-radius: 30px; background: linear-gradient(135deg, rgba(243, 156, 18, 0.6) 0%, rgba(230, 126, 34, 0.6) 100%); bottom: 20%; right: 15%; filter: blur(10px); animation: float2 8s ease-in-out infinite;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 滚动至顶部按钮 -->
+<div class="back-to-top" id="back-to-top" style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; background: linear-gradient(135deg, #4A6CF7, #9C6DF3); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(74, 108, 247, 0.4); z-index: 999;">
+    <i class="fas fa-arrow-up"></i>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/particles.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/three.min.js') }}"></script>
+<script>
+    // 初始化粒子背景
+    document.addEventListener('DOMContentLoaded', function() {
+        particlesJS('particles-js', {
+            "particles": {
+                "number": {
+                    "value": 80,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#4A6CF7"
+                },
+                "shape": {
+                    "type": "circle",
+                    "stroke": {
+                        "width": 0,
+                        "color": "#000000"
+                    },
+                    "polygon": {
+                        "nb_sides": 5
+                    }
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": false,
+                    "anim": {
+                        "enable": false,
+                        "speed": 1,
+                        "opacity_min": 0.1,
+                        "sync": false
+                    }
+                },
+                "size": {
+                    "value": 3,
+                    "random": true,
+                    "anim": {
+                        "enable": false,
+                        "speed": 40,
+                        "size_min": 0.1,
+                        "sync": false
+                    }
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#4A6CF7",
+                    "opacity": 0.2,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                    "attract": {
+                        "enable": false,
+                        "rotateX": 600,
+                        "rotateY": 1200
+                    }
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": {
+                        "distance": 140,
+                        "line_linked": {
+                            "opacity": 1
+                        }
+                    },
+                    "bubble": {
+                        "distance": 400,
+                        "size": 40,
+                        "duration": 2,
+                        "opacity": 8,
+                        "speed": 3
+                    },
+                    "repulse": {
+                        "distance": 200,
+                        "duration": 0.4
+                    },
+                    "push": {
+                        "particles_nb": 4
+                    },
+                    "remove": {
+                        "particles_nb": 2
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+        
+        // 数字动画效果
+        const animateNumbers = () => {
+            document.querySelectorAll('.animate-number').forEach(number => {
+                const target = +number.getAttribute('data-target');
+                const duration = 2000; // 动画持续时间（毫秒）
+                const steps = 100; // 步数
+                const stepValue = target / steps;
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    current += stepValue;
+                    if (current > target) {
+                        number.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        number.textContent = Math.round(current);
+                    }
+                }, duration / steps);
+            });
+        };
+        
+        // 当元素进入视口时启动动画
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateNumbers();
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        const numberElements = document.querySelectorAll('.key-metric-item');
+        numberElements.forEach(element => {
+            observer.observe(element);
+        });
+        
+        // 性能图表
+        var performanceChart = echarts.init(document.getElementById('performance-chart'));
+        
+        var performanceOption = {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'item'
+            },
+            grid: {
+                top: 10,
+                left: 30,
+                right: 30,
+                bottom: 10,
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: ['CNN', 'LSTM', 'Transformer'],
+                axisLine: {
+                    lineStyle: {
+                        color: 'rgba(255, 255, 255, 0.5)'
+                    }
+                },
+                axisLabel: {
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontSize: 12
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: 'R²得分',
+                nameTextStyle: {
+                    color: 'rgba(255, 255, 255, 0.8)'
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: 'rgba(255, 255, 255, 0.5)'
+                    }
+                },
+                axisLabel: {
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontSize: 12
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            },
+            series: [{
+                data: [0.48, 0.16, 0.89],
+                    type: 'bar',
+                    itemStyle: {
+                    normal: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                            offset: 0,
+                            color: 'rgba(255, 255, 255, 0.8)'
+                        }, {
+                            offset: 1,
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        }])
+                    }
+                },
+                barWidth: '40%',
+                label: {
+                    show: true,
+                    position: 'top',
+                    color: 'rgba(255, 255, 255, 0.9)'
+                }
+            }]
+        };
+        
+        performanceChart.setOption(performanceOption);
+        
+        // 特性小图表初始化
+        function initFeatureAnimations() {
+            // 神经网络可视化
+            var networkVis = echarts.init(document.getElementById('mini-network-vis'));
+            var networkOption = {
+                series: [{
+                    type: 'graph',
+                    layout: 'none',
+                    symbolSize: 5,
+                    roam: false,
+                    silent: true,
+                    itemStyle: {
+                        color: '#2ecc71'
+                    },
+                    lineStyle: {
+                        color: 'source',
+                        width: 1,
+                        curveness: 0.3
+                    },
+                    data: generateNetworkNodes(20),
+                    links: generateNetworkLinks(20),
+                    animation: true,
+                    animationDuration: 1500,
+                    animationEasingUpdate: 'elasticOut'
+                }]
+            };
+            networkVis.setOption(networkOption);
+            
+            // 数据流可视化
+            var dataFlowVis = echarts.init(document.getElementById('data-flow-vis'));
+            var dataFlowOption = {
+                grid: {
+                    top: 5,
+                    left: 5,
+                    right: 5,
+                    bottom: 5,
+                    containLabel: false
+                },
+                xAxis: {
+                    type: 'category',
+                    show: false,
+                    data: ['原始数据', '预处理', '特征提取', '标准化', '结构化']
+                },
+                yAxis: {
+                    type: 'value',
+                    show: false
+                },
+                series: [{
+                    type: 'scatter',
+                    symbolSize: function (val) {
+                        return val[2] * 2;
+                    },
+                    data: getDataFlowPoints(),
+                    itemStyle: {
+                        color: function(params) {
+                            // 根据x轴位置设置渐变色
+                            const colors = ['#4A6CF7', '#5E83FB', '#6E8FFE', '#7A9BFF', '#4A6CF7'];
+                            return colors[Math.floor(params.data[0])];
+                        }
+                    },
+                    animationDelay: function (idx) {
+                        return idx * 20;
+                    }
+                }]
+            };
+            dataFlowVis.setOption(dataFlowOption);
+            
+            function getDataFlowPoints() {
+                const points = [];
+                const stages = 5; // 数据处理的5个阶段
+                const pointsPerStage = 6;
+                
+                for (let stage = 0; stage < stages; stage++) {
+                    for (let i = 0; i < pointsPerStage; i++) {
+                        // 随机y位置
+                        const y = Math.random() * 50;
+                        // 随机大小
+                        const size = 2 + Math.random() * 3;
+                        // 每个阶段的x轴位置有微小的随机偏移
+                        const x = stage + Math.random() * 0.6;
+                        
+                        points.push([x, y, size]);
+                    }
+                }
+                
+                return points;
+            }
+            
+            // 设置动画循环
+            setInterval(function() {
+                dataFlowVis.setOption({
+                    series: [{
+                        data: getDataFlowPoints()
+                    }]
+                });
+            }, 3000);
+            
+            // 准确度仪表盘
+            var accuracyMeter = echarts.init(document.getElementById('accuracy-meter'));
+            var accuracyOption = {
+                series: [{
+                    type: 'gauge',
+                    radius: '100%',
+                    startAngle: 180,
+                    endAngle: 0,
+                    min: 0,
+                    max: 100,
+                    splitNumber: 10,
+                    axisLine: {
+                        lineStyle: {
+                            width: 6,
+                            color: [
+                                [0.6, '#FF6E76'],
+                                [0.8, '#FDDD60'],
+                                [1, '#7CFFB2']
+                            ]
+                        }
+                    },
+                    pointer: {
+                        icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z',
+                        length: '12%',
+                        width: 10,
+                        offsetCenter: [0, '-60%'],
+                        itemStyle: {
+                            color: 'auto'
+                        }
+                    },
+                    axisTick: {
+                        length: 12,
+                        lineStyle: {
+                            color: 'auto',
+                            width: 1
+                        }
+                    },
+                    splitLine: {
+                        length: 20,
+                        lineStyle: {
+                            color: 'auto',
+                            width: 2
+                        }
+                    },
+                    axisLabel: {
+                        color: '#999',
+                        fontSize: 8,
+                        distance: -20
+                    },
+                    title: {
+                        offsetCenter: [0, '-20%'],
+                        fontSize: 12
+                    },
+                    detail: {
+                        fontSize: 14,
+                        offsetCenter: [0, '0%'],
+                        valueAnimation: true,
+                        formatter: function (value) {
+                            return value + '%';
+                        },
+                        color: 'auto'
+                    },
+                    data: [{
+                        value: 85,
+                        name: '准确率'
+                    }],
+                    animation: true,
+                    animationDuration: 2000
+                }]
+            };
+            accuracyMeter.setOption(accuracyOption);
+            
+            // 可视化小图表
+            var miniChart = echarts.init(document.getElementById('mini-chart-vis'));
+            var miniChartOption = {
+                color: ['#3498db', '#e74c3c'],
+                grid: {
+                    top: 5,
+                    left: 5,
+                    right: 5,
+                    bottom: 5,
+                    containLabel: false
+                },
+                xAxis: {
+                    type: 'category',
+                    show: false,
+                    data: ['1', '2', '3', '4', '5', '6', '7']
+                },
+                yAxis: {
+                    type: 'value',
+                    show: false
+                },
+                series: [{
+                    data: [10, 52, 200, 334, 390, 330, 220],
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'none',
+                    lineStyle: {
+                        width: 3
+                    },
+                    areaStyle: {
+                        opacity: 0.2
+                    },
+                    animationDuration: 2000
+                }]
+            };
+            miniChart.setOption(miniChartOption);
+            
+            // 窗口大小变化时重设图表大小
+            window.addEventListener('resize', function() {
+                networkVis.resize();
+                accuracyMeter.resize();
+                miniChart.resize();
+                performanceChart.resize();
+                dataFlowVis.resize();
+            });
+        }
+        
+        // 生成网络节点数据
+        function generateNetworkNodes(count) {
+            const nodes = [];
+            // 输入层
+            for (let i = 0; i < 4; i++) {
+                nodes.push({
+                    name: 'in_' + i,
+                    x: 0,
+                    y: i * 10,
+                    category: 0
+                });
+            }
+            
+            // 隐藏层1
+            for (let i = 0; i < 6; i++) {
+                nodes.push({
+                    name: 'h1_' + i,
+                    x: 20,
+                    y: i * 8,
+                    category: 1
+                });
+            }
+            
+            // 隐藏层2
+            for (let i = 0; i < 6; i++) {
+                nodes.push({
+                    name: 'h2_' + i,
+                    x: 40,
+                    y: i * 8,
+                    category: 1
+                });
+            }
+            
+            // 输出层
+            for (let i = 0; i < 1; i++) {
+                nodes.push({
+                    name: 'out_' + i,
+                    x: 60,
+                    y: 20,
+                    category: 2
+                });
+            }
+            
+            return nodes;
+        }
+        
+        // 生成网络连接
+        function generateNetworkLinks(count) {
+            const links = [];
+            // 输入层到隐藏层1
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 6; j++) {
+                    links.push({
+                        source: 'in_' + i,
+                        target: 'h1_' + j
+                    });
+                }
+            }
+            
+            // 隐藏层1到隐藏层2
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j < 6; j++) {
+                    links.push({
+                        source: 'h1_' + i,
+                        target: 'h2_' + j
+                    });
+                }
+            }
+            
+            // 隐藏层2到输出层
+            for (let i = 0; i < 6; i++) {
+                links.push({
+                    source: 'h2_' + i,
+                    target: 'out_0'
+                });
+            }
+            
+            return links;
+        }
+        
+        // 初始化特性动画
+        initFeatureAnimations();
+    });
+
+    // 技术优势图表
+    document.addEventListener('DOMContentLoaded', function() {
+        var techChart = echarts.init(document.getElementById('tech-advantage-chart'));
+        
+        var option = {
+            backgroundColor: 'transparent',
+            radar: {
+                indicator: [
+                    { name: '预测精度', max: 100 },
+                    { name: '处理速度', max: 100 },
+                    { name: '泛化能力', max: 100 },
+                    { name: '参数效率', max: 100 },
+                    { name: '模型可解释性', max: 100 }
+                ],
+                radius: '65%',
+                center: ['50%', '50%'],
+                name: {
+                    textStyle: {
+                        color: '#333',
+                        fontWeight: 500
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            },
+            series: [{
+                name: '模型性能对比',
+                type: 'radar',
+                emphasis: {
+                    lineStyle: {
+                        width: 4
+                    }
+                },
+                data: [
+                    {
+                        value: [65, 70, 60, 80, 55],
+                        name: '传统方法',
+                        symbol: 'circle',
+                        symbolSize: 6,
+                        lineStyle: {
+                            width: 2,
+                            type: 'dashed'
+                        },
+                        areaStyle: {
+                            opacity: 0.3,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(149, 165, 166, 0.5)' },
+                                { offset: 1, color: 'rgba(149, 165, 166, 0.1)' }
+                            ])
+                        },
+                        itemStyle: {
+                            color: '#95a5a6'
+                        }
+                    },
+                    {
+                        value: [90, 88, 95, 92, 85],
+                        name: 'Transformer模型',
+                        symbol: 'circle',
+                        symbolSize: 8,
+                        areaStyle: {
+                            opacity: 0.5,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(74, 108, 247, 0.5)' },
+                                { offset: 1, color: 'rgba(156, 109, 243, 0.1)' }
+                            ])
+                        },
+                        lineStyle: {
+                            width: 3
+                        },
+                        itemStyle: {
+                            color: '#4A6CF7'
+                        }
+                    }
+                ],
+                animationDuration: 2000
+            }],
+            legend: {
+                data: ['传统方法', 'Transformer模型'],
+                bottom: '5%',
+                left: 'center',
+                textStyle: {
+                    color: '#666'
+                }
+            },
+            tooltip: {
+                trigger: 'item'
+            }
+        };
+        
+        techChart.setOption(option);
+        
+        // 滚动至顶部按钮
+        const backToTopButton = document.getElementById('back-to-top');
+        
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopButton.style.opacity = "1";
+                backToTopButton.style.visibility = "visible";
+            } else {
+                backToTopButton.style.opacity = "0";
+                backToTopButton.style.visibility = "hidden";
+            }
+        });
+        
+        backToTopButton.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // 浮动动画
+        document.head.appendChild(document.createElement('style')).innerHTML = `
+            @keyframes float1 {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-20px); }
+            }
+            
+            @keyframes float2 {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(20px); }
+            }
+            
+            .feature-list {
+                list-style: none;
+            }
+            
+            .tech-feature {
+                transition: all 0.3s ease;
+            }
+            
+            .tech-feature:hover {
+                transform: translateX(10px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            }
+        `;
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', function() {
+            techChart.resize();
+        });
+    });
+</script>
+{% endblock %} 

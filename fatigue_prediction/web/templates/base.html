@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}金属多轴疲劳寿命预测系统{% endblock %}</title>
+    <!-- 引入Bootstrap 5 -->
+     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <!-- 引入Font Awesome图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- 引入AOS动画库 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/aos.css') }}">
+    <!-- 引入自定义CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 顶部加载进度条 -->
+    <div class="page-loader">
+        <div class="progress" id="page-load-progress">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}" data-aos="fade-right" data-aos-duration="800">
+                <i class="fas fa-cogs me-2"></i>金属多轴疲劳预测
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item" data-aos="fade-down" data-aos-delay="100">
+                        <a class="nav-link {% if request.path == url_for('index') %}active{% endif %}" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>首页
+                        </a>
+                    </li>
+                    <li class="nav-item" data-aos="fade-down" data-aos-delay="200">
+                        <a class="nav-link {% if request.path == url_for('train') %}active{% endif %}" href="{{ url_for('train') }}">
+                            <i class="fas fa-graduation-cap me-1"></i>模型训练
+                        </a>
+                    </li>
+                    <li class="nav-item" data-aos="fade-down" data-aos-delay="300">
+                        <a class="nav-link {% if request.path == url_for('predict') %}active{% endif %}" href="{{ url_for('predict') }}">
+                            <i class="fas fa-chart-line me-1"></i>寿命预测
+                        </a>
+                    </li>
+                    <li class="nav-item" data-aos="fade-down" data-aos-delay="400">
+                        <a class="nav-link {% if request.path == url_for('model_comparison') %}active{% endif %}" href="{{ url_for('model_comparison') }}">
+                            <i class="fas fa-balance-scale me-1"></i>模型对比
+                        </a>
+                    </li>
+                    <li class="nav-item" data-aos="fade-down" data-aos-delay="500">
+                        <a class="nav-link {% if request.path == url_for('dashboard') %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i>可视化大屏
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 闪现消息 -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'danger' %}fa-exclamation-circle{% elif category == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="container-fluid mt-4 mb-5">
+        {% block content %}{% endblock %}
+    </div>
+
+
+    <!-- 返回顶部按钮 -->
+    <button id="back-to-top" class="btn btn-primary rounded-circle shadow">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- 引入JavaScript库 -->
+    <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/aos.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/echarts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // 初始化AOS动画
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({
+                duration: 800,
+                once: true
+            });
+            
+            // 模拟页面加载进度
+            simulatePageLoad();
+            
+            // 返回顶部按钮
+            var backToTopBtn = document.getElementById('back-to-top');
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    backToTopBtn.classList.add('show');
+                } else {
+                    backToTopBtn.classList.remove('show');
+                }
+            });
+            
+            backToTopBtn.addEventListener('click', function() {
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            });
+        });
+        
+        // 模拟页面加载进度
+        function simulatePageLoad() {
+            var progressBar = document.querySelector('#page-load-progress .progress-bar');
+            var width = 0;
+            var interval = setInterval(frame, 10);
+            
+            function frame() {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    document.querySelector('.page-loader').style.opacity = '0';
+                    setTimeout(function() {
+                        document.querySelector('.page-loader').style.display = 'none';
+                    }, 500);
+                } else {
+                    width += Math.random() * 3;
+                    if (width > 100) width = 100;
+                    progressBar.style.width = width + '%';
+                }
+            }
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

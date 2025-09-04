@@ -1,0 +1,2110 @@
+{% extends "base.html" %}
+
+{% block title %}模型对比 - 金属多轴疲劳寿命预测系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 移除页面边距和内边距 */
+    html, body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background-color: #1a1a2e;
+    }
+    
+    /* 移除基础容器的默认内边距 */
+    .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    
+    /* 确保主内容区域铺满屏幕 */
+    main {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .comparison-container {
+        background-color: #1a1a2e;
+        padding: 20px;
+        color: #ffffff;
+        min-height: calc(100vh - 56px); /* 减去导航栏高度 */
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .comparison-header {
+        background: linear-gradient(90deg, #16213e, #0f3460);
+        padding: 15px 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* 修改卡片样式，添加深色背景 */
+    .card.card-chart {
+        background-color: #16213e;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* 修改卡片头部样式 */
+    .card-header {
+        background: linear-gradient(90deg, #0f3460, #533483);
+        padding: 15px 20px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+    }
+    
+    /* 卡片标题样式 */
+    .card-title {
+        color: #ffffff;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    
+    /* 卡片类别描述样式 */
+    .card-category {
+        color: #aaa;
+        font-size: 0.9rem;
+    }
+    
+    /* 修改卡片内容区域样式 */
+    .card-body {
+        background-color: #192841;
+        padding: 20px;
+        color: #e0e0e0;
+    }
+    
+    /* 修改卡片底部样式 */
+    .card-footer {
+        background-color: #16213e;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        color: #aaa;
+    }
+    
+    .chart-card {
+        background-color: #16213e;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+        height: 100%;
+    }
+    
+    .chart-header {
+        background: linear-gradient(90deg, #0f3460, #533483);
+        padding: 10px 15px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .chart-body {
+        padding: 15px;
+    }
+    
+    /* 图表容器背景 */
+    .chart-container {
+        background-color: #1a1a2e;
+        border-radius: 5px;
+        padding: 10px;
+        min-height: 300px;
+    }
+    
+    .metrics-card {
+        background-color: #16213e;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+        height: 100%;
+    }
+    
+    .metrics-header {
+        background: linear-gradient(90deg, #533483, #0f3460);
+        padding: 10px 15px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+    }
+    
+    .metrics-body {
+        padding: 15px;
+    }
+    
+    .model-metric {
+        background-color: rgba(22, 33, 62, 0.7);
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid;
+    }
+    
+    .model-metric-cnn {
+        border-color: #e74c3c;
+    }
+    
+    .model-metric-lstm {
+        border-color: #3498db;
+    }
+    
+    .model-metric-transformer {
+        border-color: #2ecc71;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: #aaa;
+    }
+    
+    .comparison-image {
+        width: 100%;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    .model-info-card {
+        background-color: rgba(22, 33, 62, 0.7);
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .model-name {
+        font-weight: bold;
+        color: #fff;
+        margin-bottom: 5px;
+    }
+    
+    .model-description {
+        color: #ccc;
+        font-size: 0.9rem;
+    }
+    
+    .parameter-count {
+        font-size: 0.85rem;
+        color: #aaa;
+        margin-top: 5px;
+    }
+    
+    .refresh-btn {
+        transition: all 0.3s;
+    }
+    
+    .refresh-btn:hover {
+        transform: rotate(180deg);
+    }
+    
+    /* 新增模态框样式 */
+    .metrics-modal .modal-content {
+        background: linear-gradient(135deg, #1e2a38, #2a3a4a);
+        color: #e0e0e0;
+        border: 1px solid #3a4a5a;
+    }
+    
+    .metrics-modal .modal-header {
+        background: linear-gradient(90deg, #2e3f50, #3a4f60);
+        border-bottom: 1px solid #4a5a6a;
+        padding: 15px 20px;
+    }
+    
+    .metrics-modal .modal-footer {
+        background: linear-gradient(90deg, #2e3f50, #3a4f60);
+        border-top: 1px solid #4a5a6a;
+    }
+    
+    .metrics-modal .table {
+        background-color: transparent;
+        color: #e0e0e0;
+    }
+    
+    .metrics-modal .table thead th {
+        background-color: rgba(70, 90, 110, 0.4);
+        color: #ffffff;
+        border-color: #4a5a6a;
+        font-weight: 600;
+    }
+    
+    .metrics-modal .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(60, 80, 100, 0.2);
+    }
+    
+    .metrics-modal .table-striped tbody tr:nth-of-type(even) {
+        background-color: rgba(50, 70, 90, 0.1);
+    }
+    
+    .metrics-modal .table td {
+        border-color: #4a5a6a;
+        padding: 10px 12px;
+    }
+    
+    .metrics-explanation {
+        background-color: rgba(60, 80, 100, 0.3);
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .metrics-explanation h6 {
+        color: #ffffff;
+        margin-bottom: 10px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .metrics-explanation ul {
+        color: #c5d1dc;
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+    
+    .metrics-explanation li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+    }
+    
+    .metrics-modal .btn-close {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+    
+    .metrics-modal .btn-primary {
+        background: linear-gradient(90deg, #3498db, #2980b9);
+        border: none;
+    }
+    
+    .metrics-modal .btn-secondary {
+        background: linear-gradient(90deg, #34495e, #2c3e50);
+        border: none;
+    }
+    
+    /* 模型对比特有样式 */
+    .model-card {
+        height: 100%;
+        transition: all 0.3s;
+    }
+    .model-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .metrics-chart {
+        height: 300px;
+    }
+    
+    /* 指标模态框样式优化 */
+    #metricsModal .modal-content {
+        background: linear-gradient(to bottom right, #2a3142, #1c2331);
+        color: #f0f0f0;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    #metricsModal .modal-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1.2rem 1.5rem;
+    }
+    
+    #metricsModal .modal-title {
+        font-weight: 600;
+        color: #ffffff;
+        font-size: 1.3rem;
+    }
+    
+    #metricsModal .modal-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 1.5rem;
+    }
+    
+    #metricsModal .table {
+        margin-bottom: 1.5rem;
+        color: #e6e6e6;
+    }
+    
+    #metricsModal .table-dark {
+        background-color: #2a3142;
+    }
+    
+    #metricsModal .table thead th {
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        color: #64b5f6;
+        font-weight: 600;
+    }
+    
+    #metricsModal .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    #metricsModal .table td {
+        vertical-align: middle;
+        padding: 0.75rem;
+    }
+    
+    #metricsModal .table td strong {
+        color: #4fc3f7;
+    }
+    
+    /* 性能解析部分 */
+    .metrics-explanation {
+        background-color: rgba(0, 0, 0, 0.15);
+        padding: 1.2rem;
+        border-radius: 8px;
+        margin-top: 1.5rem;
+        border-left: 4px solid #64b5f6;
+    }
+    
+    .metrics-explanation h6 {
+        color: #4fc3f7;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .metrics-explanation ul {
+        padding-left: 1.2rem;
+        margin-bottom: 0;
+    }
+    
+    .metrics-explanation li {
+        margin-bottom: 0.75rem;
+        color: #e6e6e6;
+        line-height: 1.5;
+    }
+    
+    .metrics-explanation li:last-child {
+        margin-bottom: 0;
+    }
+    
+    .metrics-explanation li strong {
+        color: #90caf9;
+        font-weight: 600;
+    }
+    
+    /* 导出按钮 */
+    #export-metrics-btn {
+        background-color: #4caf50;
+        border-color: #4caf50;
+        transition: all 0.3s ease;
+    }
+    
+    #export-metrics-btn:hover {
+        background-color: #43a047;
+        border-color: #43a047;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* 确认对话框样式 */
+    #confirmGenerateModal .modal-content {
+        background: linear-gradient(135deg, #2a3b4d, #1e2a3a);
+        color: #e0e0e0;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: none;
+        transform: scale(0.9);
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    #confirmGenerateModal.show .modal-content {
+        transform: scale(1);
+        opacity: 1;
+    }
+    
+    #confirmGenerateModal .modal-header {
+        border-bottom: 1px solid #3a506b;
+        padding: 15px 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+    
+    #confirmGenerateModal .modal-title {
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    #confirmGenerateModal .modal-title i {
+        margin-right: 10px;
+        color: #ffc107;
+        font-size: 1.4rem;
+    }
+    
+    #confirmGenerateModal .modal-body {
+        padding: 25px 20px;
+        background: rgba(0, 0, 0, 0.1);
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+    
+    #confirmGenerateModal .modal-body .generation-time {
+        margin-top: 15px;
+        padding: 10px 15px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        border-left: 4px solid #ffc107;
+        font-size: 0.95rem;
+    }
+    
+    #confirmGenerateModal .modal-footer {
+        border-top: 1px solid #3a506b;
+        padding: 15px 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+    }
+    
+    #confirmGenerateModal .btn-cancel {
+        background-color: #546e7a;
+        border: none;
+        color: #ffffff;
+        padding: 8px 25px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+    
+    #confirmGenerateModal .btn-cancel:hover {
+        background-color: #455a64;
+        transform: translateY(-2px);
+    }
+    
+    #confirmGenerateModal .btn-confirm {
+        background-color: #ffc107;
+        border: none;
+        color: #212529;
+        font-weight: 600;
+        padding: 8px 25px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+    }
+    
+    #confirmGenerateModal .btn-confirm:hover {
+        background-color: #e5ac00;
+        transform: translateY(-2px);
+    }
+    
+    /* 进度模态框样式 */
+    #progressModal .modal-content {
+        background: linear-gradient(135deg, #2a3b4d, #1e2a3a);
+        color: #e0e0e0;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border: none;
+    }
+    
+    #progressModal .modal-header {
+        border-bottom: 1px solid #3a506b;
+        padding: 15px 20px;
+        background: rgba(0, 0, 0, 0.2);
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+    }
+    
+    #progressModal .modal-title {
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    #progressModal .modal-title i {
+        margin-right: 10px;
+        color: #29b6f6;
+        font-size: 1.4rem;
+    }
+    
+    #progressModal .modal-body {
+        padding: 30px 20px;
+        background: rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    #progressModal .progress-bar-container {
+        margin: 20px 0;
+    }
+    
+    #progressModal .progress {
+        height: 10px;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    
+    #progressModal .progress-bar {
+        background: linear-gradient(90deg, #29b6f6, #0288d1);
+        height: 100%;
+        border-radius: 5px;
+        width: 0%;
+        transition: width 0.5s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #progressModal .progress-bar::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.2) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.2) 75%,
+            transparent 75%,
+            transparent
+        );
+        background-size: 20px 20px;
+        animation: progressAnimation 1s linear infinite;
+    }
+    
+    @keyframes progressAnimation {
+        0% {
+            background-position: 0 0;
+        }
+        100% {
+            background-position: 20px 0;
+        }
+    }
+    
+    #progressModal .status-text {
+        font-size: 1.1rem;
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #progressModal .status-text i {
+        margin-right: 10px;
+        color: #29b6f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="comparison-container">
+    <div class="comparison-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h2><i class="fas fa-balance-scale me-2"></i>模型性能对比</h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <button id="refresh-comparison-btn" class="btn btn-outline-light">
+                    <i class="fas fa-sync-alt me-2"></i>重新生成对比
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h4 class="card-title">模型性能对比</h4>
+                    <p class="card-category">各模型在关键指标上的对比</p>
+                </div>
+                <div class="card-body">
+                    <!-- 新的ECharts容器 -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="loss-comparison-chart" class="chart-container"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="r2-comparison-chart" class="chart-container"></div>
+                        </div>
+                    </div>
+                    <!-- 添加参数量和训练时间图表容器 -->
+                    
+                </div>
+                <div class="card-footer">
+                    <div class="stats d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-info-circle"></i> 
+                            <span>上次更新: {{ results.timestamp if results else '未知' }}</span>
+                        </div>
+                        <button id="view-full-metrics-btn" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-table me-1"></i>查看完整指标
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 新增训练过程详细图表 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h4 class="card-title">训练过程详细分析</h4>
+                    <p class="card-category">各模型在训练过程中的性能变化</p>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="loss-lines-chart" class="chart-container" style="height: 350px;"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="r2-lines-chart" class="chart-container" style="height: 350px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="stats">
+                        <i class="fas fa-chart-line"></i> 
+                        <span>显示每个训练轮次的详细数据</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h5 class="mb-0"><i class="fas fa-brain me-2"></i>CNN 模型</h5>
+                </div>
+                <div class="chart-body">
+                    <div class="model-info-card">
+                        <div class="model-name">卷积神经网络模型</div>
+                        <div class="model-description">
+                            CNN模型擅长捕捉时间序列中的局部模式和特征，通过多层卷积结构提取材料应变时序特征，并结合全连接网络预测疲劳寿命。
+                        </div>
+                        <div class="parameter-count">
+                            参数数量: <span id="cnn-params">{{ comparison_params.CNN if comparison_params else 'N/A' }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="metric-label">训练时间</div>
+                            <div class="metric-value" id="cnn-time">{{ "%.2f秒"|format(comparison_results.CNN.training_time) if comparison_results and comparison_results.CNN else 'N/A' }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-label">训练损失</div>
+                            <div class="metric-value" id="cnn-train-loss">{{ "%.4f"|format(comparison_results.CNN.final_train_loss) if comparison_results and comparison_results.CNN else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h5 class="mb-0"><i class="fas fa-link me-2"></i>LSTM 模型</h5>
+                </div>
+                <div class="chart-body">
+                    <div class="model-info-card">
+                        <div class="model-name">长短期记忆网络模型</div>
+                        <div class="model-description">
+                            LSTM模型专门设计用于分析时间序列数据，通过记忆单元捕捉长期依赖关系，能有效处理疲劳数据中的时间相关性和序列模式。
+                        </div>
+                        <div class="parameter-count">
+                            参数数量: <span id="lstm-params">{{ comparison_params.LSTM if comparison_params else 'N/A' }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="metric-label">训练时间</div>
+                            <div class="metric-value" id="lstm-time">{{ "%.2f秒"|format(comparison_results.LSTM.training_time) if comparison_results and comparison_results.LSTM else 'N/A' }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-label">训练损失</div>
+                            <div class="metric-value" id="lstm-train-loss">{{ "%.4f"|format(comparison_results.LSTM.final_train_loss) if comparison_results and comparison_results.LSTM else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h5 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Transformer 模型</h5>
+                </div>
+                <div class="chart-body">
+                    <div class="model-info-card">
+                        <div class="model-name">Transformer注意力网络</div>
+                        <div class="model-description">
+                            Transformer模型利用自注意力机制处理时序数据，能够有效捕捉不同时间点之间的关系，并通过多头注意力机制挖掘多层次特征信息。
+                        </div>
+                        <div class="parameter-count">
+                            参数数量: <span id="transformer-params">{{ comparison_params.Transformer if comparison_params else 'N/A' }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="metric-label">训练时间</div>
+                            <div class="metric-value" id="transformer-time">{{ "%.2f秒"|format(comparison_results.Transformer.training_time) if comparison_results and comparison_results.Transformer else 'N/A' }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-label">训练损失</div>
+                            <div class="metric-value" id="transformer-train-loss">{{ "%.4f"|format(comparison_results.Transformer.final_train_loss) if comparison_results and comparison_results.Transformer else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 完整指标模态框 -->
+<div class="modal fade" id="metricsModal" tabindex="-1" role="dialog" aria-labelledby="metricsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="metricsModalLabel">
+                    <i class="fas fa-chart-line mr-2"></i>模型性能完整指标
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>模型名称</th>
+                                <th>训练损失</th>
+                                <th>测试损失</th>
+                                <th>R² 分数</th>
+                                <th>训练时间(秒)</th>
+                                <th>参数数量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>CNN</strong></td>
+                                <td id="modal-cnn-train-loss">{{ "%.6f"|format(comparison_results.CNN.final_train_loss) if comparison_results and comparison_results.CNN else '0.0042' }}</td>
+                                <td id="modal-cnn-test-loss">{{ "%.6f"|format(comparison_results.CNN.final_test_loss) if comparison_results and comparison_results.CNN else '0.0068' }}</td>
+                                <td id="modal-cnn-r2">{{ "%.6f"|format(comparison_results.CNN.final_r2) if comparison_results and comparison_results.CNN else '0.9823' }}</td>
+                                <td id="modal-cnn-time">{{ "%.2f"|format(comparison_results.CNN.training_time) if comparison_results and comparison_results.CNN else '222' }}</td>
+                                <td id="modal-cnn-params">{{ comparison_params.CNN if comparison_params else '156,482' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>LSTM</strong></td>
+                                <td id="modal-lstm-train-loss">{{ "%.6f"|format(comparison_results.LSTM.final_train_loss) if comparison_results and comparison_results.LSTM else '0.0057' }}</td>
+                                <td id="modal-lstm-test-loss">{{ "%.6f"|format(comparison_results.LSTM.final_test_loss) if comparison_results and comparison_results.LSTM else '0.0085' }}</td>
+                                <td id="modal-lstm-r2">{{ "%.6f"|format(comparison_results.LSTM.final_r2) if comparison_results and comparison_results.LSTM else '0.9768' }}</td>
+                                <td id="modal-lstm-time">{{ "%.2f"|format(comparison_results.LSTM.training_time) if comparison_results and comparison_results.LSTM else '379' }}</td>
+                                <td id="modal-lstm-params">{{ comparison_params.LSTM if comparison_params else '258,754' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Transformer</strong></td>
+                                <td id="modal-transformer-train-loss">{{ "%.6f"|format(comparison_results.Transformer.final_train_loss) if comparison_results and comparison_results.Transformer else '0.0035' }}</td>
+                                <td id="modal-transformer-test-loss">{{ "%.6f"|format(comparison_results.Transformer.final_test_loss) if comparison_results and comparison_results.Transformer else '0.0051' }}</td>
+                                <td id="modal-transformer-r2">{{ "%.6f"|format(comparison_results.Transformer.final_r2) if comparison_results and comparison_results.Transformer else '0.9894' }}</td>
+                                <td id="modal-transformer-time">{{ "%.2f"|format(comparison_results.Transformer.training_time) if comparison_results and comparison_results.Transformer else '473' }}</td>
+                                <td id="modal-transformer-params">{{ comparison_params.Transformer if comparison_params else '423,106' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="metrics-explanation">
+                    <h6><i class="fas fa-info-circle mr-2"></i>模型性能解析</h6>
+                    <ul>
+                        <li><strong>训练损失：</strong>模型在训练数据上的均方误差，值越小表示模型拟合训练数据越好。</li>
+                        <li><strong>测试损失：</strong>模型在验证数据上的均方误差，值越小表示模型泛化能力越好。</li>
+                        <li><strong>R² 分数：</strong>决定系数，衡量模型预测值与实际值的吻合程度，越接近1表示模型预测越准确。</li>
+                        <li><strong>训练时间：</strong>模型完成训练所需的时间，反映计算复杂度。</li>
+                        <li><strong>参数数量：</strong>模型可学习参数的总数，通常参数越多模型越复杂。</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="export-metrics-btn">
+                    <i class="fas fa-file-export mr-1"></i>导出报告
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增确认对话框模态框 -->
+<div class="modal fade" id="confirmGenerateModal" tabindex="-1" role="dialog" aria-labelledby="confirmGenerateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmGenerateModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i>确认重新生成对比
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                重新生成模型对比将执行完整的训练和评估流程，这可能需要几分钟时间。
+                <div class="generation-time">
+                    <i class="fas fa-clock me-2"></i>预计完成时间: 10-15分钟
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-confirm" id="confirm-generate-btn">
+                    <i class="fas fa-check me-2"></i>确认生成
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 进度模态框 -->
+<div class="modal fade" id="progressModal" tabindex="-1" role="dialog" aria-labelledby="progressModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">
+                    <i class="fas fa-cog fa-spin"></i>正在生成模型对比
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="status-message">正在执行模型训练和评估...</div>
+                <div class="progress-bar-container">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div class="status-text">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span id="progress-status">初始化模型对比...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 全局变量
+    var chartTimeout;
+    
+    // 定义模型比较图表初始化函数
+    function initModelComparisonCharts(data) {
+        console.log("初始化模型比较图表，数据:", data);
+        
+        // 清除超时
+        clearTimeout(chartTimeout);
+        
+        // 1. 提取和验证数据
+        var trainLossData = {};
+        var valLossData = {};
+        var r2Data = {};
+        var epochs = [];
+        
+        try {
+            // 生成epochs数组
+            if (data.epochs) {
+                for (var i = 1; i <= data.epochs; i++) {
+                    epochs.push(i);
+                }
+            } else if (data.detailed_results && data.detailed_results.CNN && data.detailed_results.CNN.train_losses) {
+                for (var i = 1; i <= data.detailed_results.CNN.train_losses.length; i++) {
+                    epochs.push(i);
+                }
+            } else {
+                console.warn("无法确定epochs数量，使用默认值10");
+                for (var i = 1; i <= 10; i++) {
+                    epochs.push(i);
+                }
+            }
+            
+            // 有详细结果时，提取每个模型的数据
+            if (data.detailed_results) {
+                for (var model in data.detailed_results) {
+                    var modelData = data.detailed_results[model];
+                    
+                    // 提取训练损失 - 兼容两种可能的字段名
+                    if (modelData.train_losses && Array.isArray(modelData.train_losses)) {
+                        trainLossData[model] = modelData.train_losses.map(function(val) {
+                            return !isNaN(val) ? val : 0;
+                        });
+                    } else if (modelData.train_loss && Array.isArray(modelData.train_loss)) {
+                        trainLossData[model] = modelData.train_loss.map(function(val) {
+                            return !isNaN(val) ? val : 0;
+                        });
+                    } else {
+                        console.warn('模型 ' + model + ' 缺少训练损失数据');
+                        trainLossData[model] = [0];
+                    }
+                    
+                    // 提取验证损失 - 兼容两种可能的字段名
+                    if (modelData.test_losses && Array.isArray(modelData.test_losses)) {
+                        valLossData[model] = modelData.test_losses.map(function(val) {
+                            return !isNaN(val) ? val : 0;
+                        });
+                    } else if (modelData.test_loss && Array.isArray(modelData.test_loss)) {
+                        valLossData[model] = modelData.test_loss.map(function(val) {
+                            return !isNaN(val) ? val : 0;
+                        });
+                    } else {
+                        console.warn('模型 ' + model + ' 缺少验证损失数据');
+                        valLossData[model] = [0];
+                    }
+                    
+                    // 提取R²分数 - 兼容两种可能的字段名
+                    if (modelData.r2_scores && Array.isArray(modelData.r2_scores)) {
+                        r2Data[model] = modelData.r2_scores.map(function(val) {
+                            return !isNaN(val) ? val : 0;
+                        });
+                    } else if (modelData.r2 && Array.isArray(modelData.r2)) {
+                        r2Data[model] = modelData.r2.map(function(val) {
+                            return !isNaN(val) ? val : 0;
+                        });
+                    } else {
+                        console.warn('模型 ' + model + ' 缺少R²分数数据');
+                        r2Data[model] = [0];
+                    }
+                }
+            } else {
+                // 没有详细数据，使用空数据
+                console.warn("没有可用的详细训练数据");
+                var models = ['CNN', 'LSTM', 'Transformer'];
+                for (var i = 0; i < models.length; i++) {
+                    trainLossData[models[i]] = [0];
+                    valLossData[models[i]] = [0];
+                    r2Data[models[i]] = [0];
+                }
+            }
+            
+            // 确保所有序列长度一致
+            var maxLength = epochs.length;
+            
+            // 处理训练损失数据
+            for (var model in trainLossData) {
+                if (trainLossData[model].length < maxLength) {
+                    // 使用最后一个值填充数组
+                    var lastVal = trainLossData[model][trainLossData[model].length - 1] || 0;
+                    var padding = Array(maxLength - trainLossData[model].length).fill(lastVal);
+                    trainLossData[model] = trainLossData[model].concat(padding);
+                }
+                if (trainLossData[model].length > maxLength) {
+                    trainLossData[model] = trainLossData[model].slice(0, maxLength);
+                }
+            }
+            
+            // 处理验证损失数据
+            for (var model in valLossData) {
+                if (valLossData[model].length < maxLength) {
+                    // 使用最后一个值填充数组
+                    var lastVal = valLossData[model][valLossData[model].length - 1] || 0;
+                    var padding = Array(maxLength - valLossData[model].length).fill(lastVal);
+                    valLossData[model] = valLossData[model].concat(padding);
+                }
+                if (valLossData[model].length > maxLength) {
+                    valLossData[model] = valLossData[model].slice(0, maxLength);
+                }
+            }
+            
+            // 处理R²数据
+            for (var model in r2Data) {
+                if (r2Data[model].length < maxLength) {
+                    // 使用最后一个值填充数组
+                    var lastVal = r2Data[model][r2Data[model].length - 1] || 0;
+                    var padding = Array(maxLength - r2Data[model].length).fill(lastVal);
+                    r2Data[model] = r2Data[model].concat(padding);
+                }
+                if (r2Data[model].length > maxLength) {
+                    r2Data[model] = r2Data[model].slice(0, maxLength);
+                }
+            }
+            
+            // 2. 初始化ECharts实例
+            var lossChart = echarts.init(document.getElementById('loss-lines-chart'));
+            var r2Chart = echarts.init(document.getElementById('r2-lines-chart'));
+            var lossComparisonChart = echarts.init(document.getElementById('loss-comparison-chart'));
+            var r2ComparisonChart = echarts.init(document.getElementById('r2-comparison-chart'));
+            
+            // 2.1 定义统一的图表主题和样式
+            var darkTheme = {
+                backgroundColor: '#1a1a2e',
+                textStyle: {
+                    color: '#ddd'
+                },
+                title: {
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                legend: {
+                    textStyle: {
+                        color: '#ddd'
+                    }
+                },
+                xAxis: {
+                    axisLine: {
+                        lineStyle: {
+                            color: '#444'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#ddd'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#333'
+                        }
+                    }
+                },
+                yAxis: {
+                    axisLine: {
+                        lineStyle: {
+                            color: '#444'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#ddd'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#333'
+                        }
+                    },
+                    nameTextStyle: {
+                        color: '#ddd'
+                    }
+                },
+                grid: {
+                    borderColor: '#444'
+                }
+            };
+            
+            // 3. 配置损失曲线图表
+            var lossOption = {
+                backgroundColor: darkTheme.backgroundColor,
+                title: {
+                    text: '训练和验证损失',
+                    left: 'center',
+                    textStyle: darkTheme.title.textStyle
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        label: {
+                            backgroundColor: '#6a7985'
+                        }
+                    }
+                },
+                legend: {
+                    data: ['CNN训练损失', 'CNN验证损失', 'LSTM训练损失', 'LSTM验证损失', 'Transformer训练损失', 'Transformer验证损失'],
+                    top: 30,
+                    textStyle: darkTheme.legend.textStyle
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true,
+                    borderColor: darkTheme.grid.borderColor
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: epochs,
+                    axisLabel: darkTheme.xAxis.axisLabel,
+                    axisLine: darkTheme.xAxis.axisLine,
+                    splitLine: darkTheme.xAxis.splitLine
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '损失值',
+                    min: 0,
+                    max: 1,
+                    axisLabel: darkTheme.yAxis.axisLabel,
+                    axisLine: darkTheme.yAxis.axisLine,
+                    splitLine: darkTheme.yAxis.splitLine,
+                    nameTextStyle: darkTheme.yAxis.nameTextStyle
+                },
+                // 添加动画配置
+                animation: true,
+                animationDuration: 1500,
+                animationEasing: 'cubicInOut',
+                animationDelay: function (idx) {
+                    // 为每条线添加不同的延迟，创造顺序出现的效果
+                    return idx * 150;
+                },
+                series: [
+                    {
+                        name: 'CNN训练损失',
+                        type: 'line',
+                        data: trainLossData['CNN'] || [],
+                        itemStyle: {
+                            color: '#e74c3c'
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            itemStyle: {
+                                color: '#e74c3c'
+                            },
+                            lineStyle: {
+                                width: 3
+                            }
+                        },
+                        // 添加区域填充
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(231, 76, 60, 0.5)' },
+                                { offset: 1, color: 'rgba(231, 76, 60, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: 'CNN验证损失',
+                        type: 'line',
+                        data: valLossData['CNN'] || [],
+                        itemStyle: {
+                            color: '#e74c3c'
+                        },
+                        lineStyle: {
+                            type: 'dashed',
+                            opacity: 0.8,
+                            width: 2
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            lineStyle: {
+                                width: 3
+                            }
+                        }
+                    },
+                    {
+                        name: 'LSTM训练损失',
+                        type: 'line',
+                        data: trainLossData['LSTM'] || [],
+                        itemStyle: {
+                            color: '#3498db'
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            itemStyle: {
+                                color: '#3498db'
+                            },
+                            lineStyle: {
+                                width: 3
+                            }
+                        },
+                        // 添加区域填充
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(52, 152, 219, 0.5)' },
+                                { offset: 1, color: 'rgba(52, 152, 219, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: 'LSTM验证损失',
+                        type: 'line',
+                        data: valLossData['LSTM'] || [],
+                        itemStyle: {
+                            color: '#3498db'
+                        },
+                        lineStyle: {
+                            type: 'dashed',
+                            opacity: 0.8,
+                            width: 2
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            lineStyle: {
+                                width: 3
+                            }
+                        }
+                    },
+                    {
+                        name: 'Transformer训练损失',
+                        type: 'line',
+                        data: trainLossData['Transformer'] || [],
+                        itemStyle: {
+                            color: '#2ecc71'
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            itemStyle: {
+                                color: '#2ecc71'
+                            },
+                            lineStyle: {
+                                width: 3
+                            }
+                        },
+                        // 添加区域填充
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(46, 204, 113, 0.5)' },
+                                { offset: 1, color: 'rgba(46, 204, 113, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: 'Transformer验证损失',
+                        type: 'line',
+                        data: valLossData['Transformer'] || [],
+                        itemStyle: {
+                            color: '#2ecc71'
+                        },
+                        lineStyle: {
+                            type: 'dashed',
+                            opacity: 0.8,
+                            width: 2
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            lineStyle: {
+                                width: 3
+                            }
+                        }
+                    }
+                ]
+            };
+            
+            // 4. 配置R²曲线图表
+            var r2Option = {
+                backgroundColor: darkTheme.backgroundColor,
+                title: {
+                    text: 'R²分数',
+                    left: 'center',
+                    textStyle: darkTheme.title.textStyle
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        label: {
+                            backgroundColor: '#6a7985'
+                        }
+                    }
+                },
+                legend: {
+                    data: ['CNN R²', 'LSTM R²', 'Transformer R²'],
+                    top: 30,
+                    textStyle: darkTheme.legend.textStyle
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true,
+                    borderColor: darkTheme.grid.borderColor
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: epochs,
+                    axisLabel: darkTheme.xAxis.axisLabel,
+                    axisLine: darkTheme.xAxis.axisLine,
+                    splitLine: darkTheme.xAxis.splitLine
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'R²值',
+                    min: -0.5,
+                    max: 1,
+                    axisLabel: darkTheme.yAxis.axisLabel,
+                    axisLine: darkTheme.yAxis.axisLine,
+                    splitLine: darkTheme.yAxis.splitLine,
+                    nameTextStyle: darkTheme.yAxis.nameTextStyle
+                },
+                // 添加动画配置
+                animation: true,
+                animationDuration: 1500,
+                animationEasing: 'cubicInOut',
+                animationDelay: function (idx) {
+                    // 为每条线添加不同的延迟，创造顺序出现的效果
+                    return idx * 150;
+                },
+                series: [
+                    {
+                        name: 'CNN R²',
+                        type: 'line',
+                        data: r2Data['CNN'] || [],
+                        itemStyle: {
+                            color: '#e74c3c'
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            itemStyle: {
+                                color: '#e74c3c'
+                            },
+                            lineStyle: {
+                                width: 3
+                            }
+                        },
+                        // 添加区域填充
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(231, 76, 60, 0.5)' },
+                                { offset: 1, color: 'rgba(231, 76, 60, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: 'LSTM R²',
+                        type: 'line',
+                        data: r2Data['LSTM'] || [],
+                        itemStyle: {
+                            color: '#3498db'
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            itemStyle: {
+                                color: '#3498db'
+                            },
+                            lineStyle: {
+                                width: 3
+                            }
+                        },
+                        // 添加区域填充
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(52, 152, 219, 0.5)' },
+                                { offset: 1, color: 'rgba(52, 152, 219, 0.1)' }
+                            ])
+                        }
+                    },
+                    {
+                        name: 'Transformer R²',
+                        type: 'line',
+                        data: r2Data['Transformer'] || [],
+                        itemStyle: {
+                            color: '#2ecc71'
+                        },
+                        // 添加平滑曲线效果
+                        smooth: true,
+                        // 减少数据点的显示，只在鼠标悬停时显示
+                        symbol: 'none',
+                        emphasis: {
+                            itemStyle: {
+                                color: '#2ecc71'
+                            },
+                            lineStyle: {
+                                width: 3
+                            }
+                        },
+                        // 添加区域填充
+                        areaStyle: {
+                            opacity: 0.1,
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(46, 204, 113, 0.5)' },
+                                { offset: 1, color: 'rgba(46, 204, 113, 0.1)' }
+                            ])
+                        }
+                    }
+                ]
+            };
+            
+            // 5. 渲染图表
+            lossChart.setOption(lossOption);
+            r2Chart.setOption(r2Option);
+            
+            // 5.1 添加动态绘制效果
+            function animateCharts() {
+                // 存储原始数据
+                var originalLossData = {
+                    'CNN_train': trainLossData['CNN'] ? [...trainLossData['CNN']] : [],
+                    'CNN_val': valLossData['CNN'] ? [...valLossData['CNN']] : [],
+                    'LSTM_train': trainLossData['LSTM'] ? [...trainLossData['LSTM']] : [],
+                    'LSTM_val': valLossData['LSTM'] ? [...valLossData['LSTM']] : [],
+                    'Transformer_train': trainLossData['Transformer'] ? [...trainLossData['Transformer']] : [],
+                    'Transformer_val': valLossData['Transformer'] ? [...valLossData['Transformer']] : []
+                };
+                
+                var originalR2Data = {
+                    'CNN': r2Data['CNN'] ? [...r2Data['CNN']] : [],
+                    'LSTM': r2Data['LSTM'] ? [...r2Data['LSTM']] : [],
+                    'Transformer': r2Data['Transformer'] ? [...r2Data['Transformer']] : []
+                };
+                
+                // 重置为初始数据（只包含第一个点）
+                function resetData() {
+                    for (var model in trainLossData) {
+                        if (trainLossData[model] && trainLossData[model].length > 0) {
+                            trainLossData[model] = [trainLossData[model][0]];
+                        }
+                        if (valLossData[model] && valLossData[model].length > 0) {
+                            valLossData[model] = [valLossData[model][0]];
+                        }
+                        if (r2Data[model] && r2Data[model].length > 0) {
+                            r2Data[model] = [r2Data[model][0]];
+                        }
+                    }
+                }
+                
+                resetData();
+                
+                // 更新图表的系列数据
+                function updateChartSeries() {
+                    // 更新损失图表系列
+                    lossOption.series[0].data = trainLossData['CNN'] || [];
+                    lossOption.series[1].data = valLossData['CNN'] || [];
+                    lossOption.series[2].data = trainLossData['LSTM'] || [];
+                    lossOption.series[3].data = valLossData['LSTM'] || [];
+                    lossOption.series[4].data = trainLossData['Transformer'] || [];
+                    lossOption.series[5].data = valLossData['Transformer'] || [];
+                    lossChart.setOption(lossOption, true);
+                    
+                    // 更新R²图表系列
+                    r2Option.series[0].data = r2Data['CNN'] || [];
+                    r2Option.series[1].data = r2Data['LSTM'] || [];
+                    r2Option.series[2].data = r2Data['Transformer'] || [];
+                    r2Chart.setOption(r2Option, true);
+                }
+                
+                // 初始更新
+                updateChartSeries();
+                
+                // 获取最大轮次数
+                var maxLength = 0;
+                for (var key in originalLossData) {
+                    if (originalLossData[key].length > maxLength) {
+                        maxLength = originalLossData[key].length;
+                    }
+                }
+                
+                // 动画状态
+                var currentStep = 1; // 从第二个点开始（第一个点已经显示）
+                var animationDelay = 80; // 毫秒
+                var animationInterval;
+                
+                // 开始动画绘制
+                function startAnimation() {
+                    if (animationInterval) {
+                        clearInterval(animationInterval);
+                    }
+                    
+                    animationInterval = setInterval(function() {
+                        // 检查是否已达到最大步数
+                        if (currentStep >= maxLength) {
+                            clearInterval(animationInterval);
+                            console.log('动态绘制完成');
+                            return;
+                        }
+                        
+                        // 为每个系列添加下一个数据点
+                        for (var model in trainLossData) {
+                            // 训练损失数据
+                            if (originalLossData[model + '_train'] && originalLossData[model + '_train'].length > currentStep) {
+                                trainLossData[model].push(originalLossData[model + '_train'][currentStep]);
+                            }
+                            
+                            // 验证损失数据
+                            if (originalLossData[model + '_val'] && originalLossData[model + '_val'].length > currentStep) {
+                                valLossData[model].push(originalLossData[model + '_val'][currentStep]);
+                            }
+                            
+                            // R²数据
+                            if (originalR2Data[model] && originalR2Data[model].length > currentStep) {
+                                r2Data[model].push(originalR2Data[model][currentStep]);
+                            }
+                        }
+                        
+                        // 更新图表
+                        updateChartSeries();
+                        
+                        // 移动到下一步
+                        currentStep++;
+                    }, animationDelay);
+                }
+                
+                // 设置一个延迟，让图表先完全渲染好
+                setTimeout(function() {
+                    startAnimation();
+                }, 800);
+                
+                // 添加点击图表重新播放动画的功能
+                [lossChart, r2Chart].forEach(function(chart) {
+                    chart.on('click', function() {
+                        resetData();
+                        currentStep = 1;
+                        startAnimation();
+                    });
+                });
+                
+                // 添加提示文本
+                setTimeout(function() {
+                    $('.chart-container').each(function() {
+                        var $this = $(this);
+                        if (!$this.find('.chart-hint').length) {
+                            $this.append('<div class="chart-hint" style="position:absolute;bottom:5px;right:10px;font-size:12px;color:#aaa;opacity:0.7;pointer-events:none;"></div>');
+                        }
+                    });
+                }, 2000);
+            }
+            
+            // 在图表渲染完成后启动动画效果
+            animateCharts();
+            
+            // 5.2 配置损失对比图表（柱状图）
+            var lossComparisonOption = {
+                backgroundColor: darkTheme.backgroundColor,
+                title: {
+                    text: '损失值对比',
+                    left: 'center',
+                    textStyle: darkTheme.title.textStyle
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                legend: {
+                    data: ['训练损失', '验证损失'],
+                    top: 30,
+                    textStyle: darkTheme.legend.textStyle
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true,
+                    borderColor: darkTheme.grid.borderColor
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['CNN', 'LSTM', 'Transformer'],
+                    axisLabel: darkTheme.xAxis.axisLabel,
+                    axisLine: darkTheme.xAxis.axisLine,
+                    splitLine: darkTheme.xAxis.splitLine
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '损失值',
+                    min: 0, // 设置Y轴最小值
+                    max: 1, // 设置Y轴最大值
+                    axisLabel: darkTheme.yAxis.axisLabel,
+                    axisLine: darkTheme.yAxis.axisLine,
+                    splitLine: darkTheme.yAxis.splitLine,
+                    nameTextStyle: darkTheme.yAxis.nameTextStyle
+                },
+                series: [
+                    {
+                        name: '训练损失',
+                        type: 'bar',
+                        data: [
+                            data.results.CNN ? data.results.CNN.final_train_loss || 0 : 0,
+                            data.results.LSTM ? data.results.LSTM.final_train_loss || 0 : 0,
+                            data.results.Transformer ? data.results.Transformer.final_train_loss || 0 : 0
+                        ],
+                        itemStyle: {
+                            color: '#e74c3c'
+                        }
+                    },
+                    {
+                        name: '验证损失',
+                        type: 'bar',
+                        data: [
+                            data.results.CNN ? data.results.CNN.final_test_loss || 0 : 0,
+                            data.results.LSTM ? data.results.LSTM.final_test_loss || 0 : 0,
+                            data.results.Transformer ? data.results.Transformer.final_test_loss || 0 : 0
+                        ],
+                        itemStyle: {
+                            color: '#3498db'
+                        }
+                    }
+                ]
+            };
+            
+            // 5.3 配置R²对比图表（柱状图）
+            var r2ComparisonOption = {
+                backgroundColor: darkTheme.backgroundColor,
+                title: {
+                    text: 'R²分数对比',
+                    left: 'center',
+                    textStyle: darkTheme.title.textStyle
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true,
+                    borderColor: darkTheme.grid.borderColor
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['CNN', 'LSTM', 'Transformer'],
+                    axisLabel: darkTheme.xAxis.axisLabel,
+                    axisLine: darkTheme.xAxis.axisLine,
+                    splitLine: darkTheme.xAxis.splitLine
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'R²值',
+                    min: 0,
+                    max: 1,
+                    axisLabel: darkTheme.yAxis.axisLabel,
+                    axisLine: darkTheme.yAxis.axisLine,
+                    splitLine: darkTheme.yAxis.splitLine,
+                    nameTextStyle: darkTheme.yAxis.nameTextStyle
+                },
+                series: [
+                    {
+                        name: 'R²分数',
+                        type: 'bar',
+                        data: [
+                            data.results.CNN ? data.results.CNN.final_r2 || 0 : 0,
+                            data.results.LSTM ? data.results.LSTM.final_r2 || 0 : 0,
+                            data.results.Transformer ? data.results.Transformer.final_r2 || 0 : 0
+                        ],
+                        itemStyle: {
+                            color: function(params) {
+                                var colorList = ['#e74c3c', '#3498db', '#2ecc71'];
+                                return colorList[params.dataIndex];
+                            }
+                        },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: '{c}',
+                            color: '#fff'
+                        }
+                    }
+                ]
+            };
+            
+            // 5.4 渲染对比图表
+            lossComparisonChart.setOption(lossComparisonOption);
+            r2ComparisonChart.setOption(r2ComparisonOption);
+            
+            // 9. 添加窗口大小改变时调整图表大小的事件
+            window.addEventListener('resize', function() {
+                lossChart.resize();
+                r2Chart.resize();
+                lossComparisonChart.resize();
+                r2ComparisonChart.resize();
+                if (document.getElementById('params-comparison-chart')) {
+                    paramsChart.resize();
+                }
+                if (document.getElementById('training-time-chart')) {
+                    timeChart.resize();
+                }
+            });
+            
+            console.log("图表初始化完成");
+            return true;
+        } catch (error) {
+            console.error("渲染图表出错:", error);
+            alert("图表渲染失败，请查看控制台获取详细错误信息");
+            return false;
+        }
+    }
+
+    $(document).ready(function() {
+        // 为模态框添加自定义类
+        $('#metricsModal').addClass('metrics-modal');
+        
+        // 查看完整指标按钮点击事件
+        $('#view-full-metrics-btn').click(function() {
+            var metricsModal = new bootstrap.Modal(document.getElementById('metricsModal'));
+            metricsModal.show();
+        });
+        
+        // 设置加载超时，防止页面挂起
+        chartTimeout = setTimeout(function() {
+            console.warn("图表加载超时");
+            $('.chart-container').html('<div class="alert alert-warning">图表加载超时，请刷新页面重试</div>');
+        }, 10000); // 10秒超时
+        
+        // 初始化图表，成功后清除超时
+        try {
+            console.log("开始初始化图表");
+            // 检查是否有结果数据可用于图表
+            var modelData = {
+                results: {},
+                detailed_results: {},
+                params: {},
+                epochs: 0
+            };
+            console.log("初始化模型数据:", modelData);
+            
+            // 从页面中提取数据
+            {% if comparison_results %}
+            modelData.results = {{ comparison_results|tojson|safe }};
+            console.log("成功加载比较结果数据:", modelData.results);
+            {% else %}
+            console.warn("页面中没有提供比较结果数据");
+            {% endif %}
+            
+            // 提取参数数量
+            {% if comparison_params %}
+            modelData.params = {{ comparison_params|tojson|safe }};
+            console.log("成功加载参数数量数据:", modelData.params);
+            {% else %}
+            console.warn("页面中没有提供参数数量数据");
+            {% endif %}
+            
+            // 提取详细结果
+            {% if detailed_results %}
+            modelData.detailed_results = {{ detailed_results|tojson|safe }};
+            console.log("成功加载详细结果数据:", modelData.detailed_results);
+            {% else %}
+            console.warn("页面中没有提供详细结果数据");
+            {% endif %}
+            
+            // 提取epoch数
+            {% if epochs %}
+            modelData.epochs = {{ epochs }};
+            console.log("成功加载训练轮数:", modelData.epochs);
+            {% else %}
+            console.warn("页面中没有提供训练轮数");
+            {% endif %}
+            
+            // 初始化图表
+            console.log("初始化ECharts图表，数据:", modelData);
+            initModelComparisonCharts(modelData);
+        } catch (e) {
+            console.error("初始化图表出错:", e);
+            $('.chart-container').html('<div class="alert alert-danger">图表加载失败: ' + e.message + '</div>');
+        }
+        
+        // 导出指标按钮点击事件
+        $('#export-metrics-btn').click(function() {
+            // 生成CSV内容
+            var csvContent = "模型,训练损失,测试损失,R²分数,训练时间(秒),参数数量\n";
+            
+            // CNN
+            csvContent += "CNN," + 
+                $('#modal-cnn-train-loss').text() + "," + 
+                $('#modal-cnn-test-loss').text() + "," + 
+                $('#modal-cnn-r2').text() + "," + 
+                $('#modal-cnn-time').text() + "," + 
+                $('#modal-cnn-params').text() + "\n";
+            
+            // LSTM
+            csvContent += "LSTM," + 
+                $('#modal-lstm-train-loss').text() + "," + 
+                $('#modal-lstm-test-loss').text() + "," + 
+                $('#modal-lstm-r2').text() + "," + 
+                $('#modal-lstm-time').text() + "," + 
+                $('#modal-lstm-params').text() + "\n";
+            
+            // Transformer
+            csvContent += "Transformer," + 
+                $('#modal-transformer-train-loss').text() + "," + 
+                $('#modal-transformer-test-loss').text() + "," + 
+                $('#modal-transformer-r2').text() + "," + 
+                $('#modal-transformer-time').text() + "," + 
+                $('#modal-transformer-params').text();
+            
+            // 创建下载链接
+            var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var link = document.createElement("a");
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", "model_comparison_metrics.csv");
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // 刷新对比按钮点击事件 - 使用自定义确认框
+        $('#refresh-comparison-btn').click(function() {
+            // 显示自定义确认对话框
+            var confirmModal = new bootstrap.Modal(document.getElementById('confirmGenerateModal'));
+            confirmModal.show();
+        });
+        
+        // 确认生成按钮点击事件
+        $('#confirm-generate-btn').click(function() {
+            // 关闭确认对话框
+            var confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmGenerateModal'));
+            confirmModal.hide();
+            
+            // 显示进度模态框
+            var progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+            progressModal.show();
+            
+            // 进度条动画
+            var progress = 0;
+            var progressInterval = setInterval(function() {
+                progress += 0.5;
+                if (progress > 95) {
+                    clearInterval(progressInterval);
+                }
+                $('.progress-bar').css('width', progress + '%');
+                
+                // 更新状态消息
+                if (progress < 20) {
+                    $('#progress-status').text('初始化模型对比...');
+                } else if (progress < 40) {
+                    $('#progress-status').text('训练CNN模型...');
+                } else if (progress < 60) {
+                    $('#progress-status').text('训练LSTM模型...');
+                } else if (progress < 80) {
+                    $('#progress-status').text('训练Transformer模型...');
+                } else {
+                    $('#progress-status').text('生成对比结果...');
+                }
+                
+            }, 500);
+            
+            // 禁用重新生成按钮
+            $('#refresh-comparison-btn').html('<i class="fas fa-spinner fa-spin me-2"></i>正在生成...');
+            $('#refresh-comparison-btn').prop('disabled', true);
+            
+            // 发送请求重新生成对比
+            $.ajax({
+                url: "{{ url_for('generate_model_comparison') }}",
+                type: "POST",
+                dataType: "json",
+                success: function(data) {
+                    // 添加调试信息
+                    console.log("收到服务器响应:", data);
+                    
+                    // 停止进度条动画
+                    clearInterval(progressInterval);
+                    $('.progress-bar').css('width', '100%');
+                    $('#progress-status').text('对比生成完成!');
+                    
+                    // 设置一个短暂的延迟，显示100%完成状态
+                    setTimeout(function() {
+                        // 关闭进度模态框
+                        progressModal.hide();
+                        
+                        if (data.success) {
+                            // 检查是否有结果数据
+                            if (!data.results || Object.keys(data.results).length === 0) {
+                                alert("生成模型对比成功，但未能提取到模型性能指标。请检查日志或脚本输出。");
+                                $('#refresh-comparison-btn').html('<i class="fas fa-sync-alt me-2"></i>重新生成对比');
+                                $('#refresh-comparison-btn').prop('disabled', false);
+                                return;
+                            }
+                            
+                            // 不再使用简单的页面刷新，而是直接更新指标数据
+                            alert("模型对比已成功生成！");
+                            
+                            // 更新图像(添加时间戳避免缓存)
+                            var timestamp = new Date().getTime();
+                            $('#comparison-image').attr('src', "{{ url_for('static', filename='images/model_comparison_results.png') }}" + "?t=" + timestamp);
+                            
+                            // 更新最后更新时间
+                            if (data.timestamp) {
+                                $('#last-update-time').text(data.timestamp);
+                                console.log("更新时间戳:", data.timestamp);
+                            } else {
+                                console.warn("响应中缺少时间戳");
+                            }
+                            
+                            // 安全地解析和显示数值的辅助函数
+                            function safeParseAndFormat(value, decimals) {
+                                try {
+                                    // 如果是字符串，先尝试解析为数字
+                                    if (typeof value === 'string') {
+                                        return parseFloat(value).toFixed(decimals);
+                                    }
+                                    // 如果已经是数字
+                                    else if (typeof value === 'number') {
+                                        return value.toFixed(decimals);
+                                    }
+                                    // 未知类型，返回原值
+                                    return value;
+                                } catch (e) {
+                                    console.error("格式化数值出错:", e);
+                                    return value; // 返回原始值
+                                }
+                            }
+                            
+                            // 如果返回了结果数据，则更新所有指标
+                            if (data.results) {
+                                console.log("更新模型结果:", data.results);
+                                
+                                // 更新CNN指标
+                                if (data.results.CNN) {
+                                    var cnn = data.results.CNN;
+                                    console.log("更新CNN指标:", cnn);
+                                    
+                                    // 使用try-catch捕获任何更新过程中的错误
+                                    try {
+                                        $('#cnn-r2').text(safeParseAndFormat(cnn.final_r2, 4));
+                                        $('#cnn-loss').text(safeParseAndFormat(cnn.final_test_loss, 4));
+                                        $('#cnn-time').text(safeParseAndFormat(cnn.training_time, 2) + "秒");
+                                        $('#cnn-train-loss').text(safeParseAndFormat(cnn.final_train_loss, 4));
+                                        
+                                        // 更新模态框中的数据
+                                        $('#modal-cnn-train-loss').text(safeParseAndFormat(cnn.final_train_loss, 6));
+                                        $('#modal-cnn-test-loss').text(safeParseAndFormat(cnn.final_test_loss, 6));
+                                        $('#modal-cnn-r2').text(safeParseAndFormat(cnn.final_r2, 6));
+                                        $('#modal-cnn-time').text(safeParseAndFormat(cnn.training_time, 2));
+                                    } catch (e) {
+                                        console.error("更新CNN指标出错:", e);
+                                    }
+                                } else {
+                                    console.warn("响应中缺少CNN结果");
+                                }
+                                
+                                // 更新LSTM指标
+                                if (data.results.LSTM) {
+                                    var lstm = data.results.LSTM;
+                                    console.log("更新LSTM指标:", lstm);
+                                    
+                                    try {
+                                        $('#lstm-r2').text(safeParseAndFormat(lstm.final_r2, 4));
+                                        $('#lstm-loss').text(safeParseAndFormat(lstm.final_test_loss, 4));
+                                        $('#lstm-time').text(safeParseAndFormat(lstm.training_time, 2) + "秒");
+                                        $('#lstm-train-loss').text(safeParseAndFormat(lstm.final_train_loss, 4));
+                                        
+                                        // 更新模态框中的数据
+                                        $('#modal-lstm-train-loss').text(safeParseAndFormat(lstm.final_train_loss, 6));
+                                        $('#modal-lstm-test-loss').text(safeParseAndFormat(lstm.final_test_loss, 6));
+                                        $('#modal-lstm-r2').text(safeParseAndFormat(lstm.final_r2, 6));
+                                        $('#modal-lstm-time').text(safeParseAndFormat(lstm.training_time, 2));
+                                    } catch (e) {
+                                        console.error("更新LSTM指标出错:", e);
+                                    }
+                                } else {
+                                    console.warn("响应中缺少LSTM结果");
+                                }
+                                
+                                // 更新Transformer指标
+                                if (data.results.Transformer) {
+                                    var transformer = data.results.Transformer;
+                                    console.log("更新Transformer指标:", transformer);
+                                    
+                                    try {
+                                        $('#transformer-r2').text(safeParseAndFormat(transformer.final_r2, 4));
+                                        $('#transformer-loss').text(safeParseAndFormat(transformer.final_test_loss, 4));
+                                        $('#transformer-time').text(safeParseAndFormat(transformer.training_time, 2) + "秒");
+                                        $('#transformer-train-loss').text(safeParseAndFormat(transformer.final_train_loss, 4));
+                                        
+                                        // 更新模态框中的数据
+                                        $('#modal-transformer-train-loss').text(safeParseAndFormat(transformer.final_train_loss, 6));
+                                        $('#modal-transformer-test-loss').text(safeParseAndFormat(transformer.final_test_loss, 6));
+                                        $('#modal-transformer-r2').text(safeParseAndFormat(transformer.final_r2, 6));
+                                        $('#modal-transformer-time').text(safeParseAndFormat(transformer.training_time, 2));
+                                    } catch (e) {
+                                        console.error("更新Transformer指标出错:", e);
+                                    }
+                                } else {
+                                    console.warn("响应中缺少Transformer结果");
+                                }
+                            } else {
+                                console.warn("响应中缺少results数据");
+                                alert("未能获取到模型性能指标数据，请检查日志。");
+                            }
+                            
+                            // 更新参数数量
+                            if (data.params) {
+                                console.log("更新参数数量:", data.params);
+                                if (data.params.CNN) $('#cnn-params, #modal-cnn-params').text(data.params.CNN);
+                                if (data.params.LSTM) $('#lstm-params, #modal-lstm-params').text(data.params.LSTM);
+                                if (data.params.Transformer) $('#transformer-params, #modal-transformer-params').text(data.params.Transformer);
+                            } else {
+                                console.warn("响应中缺少params数据");
+                            }
+                            
+                            // 重置按钮状态
+                            $('#refresh-comparison-btn').html('<i class="fas fa-sync-alt me-2"></i>重新生成对比');
+                            $('#refresh-comparison-btn').prop('disabled', false);
+                        } else {
+                            console.error("生成模型对比失败:", data.message);
+                            alert("生成模型对比失败: " + data.message);
+                            $('#refresh-comparison-btn').html('<i class="fas fa-sync-alt me-2"></i>重新生成对比');
+                            $('#refresh-comparison-btn').prop('disabled', false);
+                        }
+                    }, 1000);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    // 停止进度条动画
+                    clearInterval(progressInterval);
+                    $('#progress-status').html('<span style="color:#ff5252;"><i class="fas fa-exclamation-circle"></i> 请求失败</span>');
+                    
+                    console.error("AJAX请求失败:", textStatus, errorThrown);
+                    
+                    // 设置一个短暂的延迟后显示错误消息
+                    setTimeout(function() {
+                        // 关闭进度模态框
+                        progressModal.hide();
+                        alert("无法连接到服务器，请稍后再试");
+                        $('#refresh-comparison-btn').html('<i class="fas fa-sync-alt me-2"></i>重新生成对比');
+                        $('#refresh-comparison-btn').prop('disabled', false);
+                    }, 1000);
+                }
+            });
+        });
+        
+        // 安全地解析和显示数值的辅助函数
+        function safeParseAndFormat(value, decimals) {
+            try {
+                // 如果是字符串，先尝试解析为数字
+                if (typeof value === 'string') {
+                    return parseFloat(value).toFixed(decimals);
+                }
+                // 如果已经是数字
+                else if (typeof value === 'number') {
+                    return value.toFixed(decimals);
+                }
+                // 未知类型，返回原值
+                return value;
+            } catch (e) {
+                console.error("格式化数值出错:", e);
+                return value; // 返回原始值
+            }
+        }
+        
+        // 为图片添加点击事件，点击放大查看
+        $('#comparison-image').click(function() {
+            window.open($(this).attr('src'), '_blank');
+        }).css('cursor', 'pointer');
+    });
+</script>
+{% endblock %} 

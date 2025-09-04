@@ -1,0 +1,1584 @@
+{% extends "base.html" %}
+
+{% block title %}可视化大屏 - 金属多轴疲劳寿命预测系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background-color: #1a1a2e;
+    }
+
+    /* 移除基础容器的默认内边距 */
+    .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    
+
+    
+    .dashboard-container {
+        background-color: #1a1a2e;
+        padding: 20px;
+        color: #ffffff;
+        min-height: calc(100vh - 56px); /* 减去导航栏高度 */
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .dashboard-header {
+        background: linear-gradient(90deg, #16213e, #0f3460);
+        padding: 15px 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .chart-card {
+        background-color: #16213e;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    /* 确保左右两侧卡片高度对齐 */
+    .row:first-of-type .chart-card {
+        min-height: 500px; /* 保证最小高度 */
+    }
+    
+    .material-status-card {
+        min-height: 500px; /* 与左侧大图表保持一致的高度 */
+    }
+    
+    .chart-header {
+        background: linear-gradient(90deg, #0f3460, #533483);
+        padding: 10px 15px;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 56px; /* 固定高度，确保一致性 */
+    }
+    
+    .chart-body {
+        padding: 15px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .chart-container {
+        width: 100%;
+        flex: 1;
+        min-height: 250px;
+    }
+    
+    .status-card {
+        background: linear-gradient(135deg, #16213e, #1a1a2e);
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .status-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    
+    .status-label {
+        font-size: 0.9rem;
+        color: #aaa;
+        margin-bottom: 5px;
+    }
+    
+    .material-health {
+        height: 450px; /* 调整高度与左侧大图表对齐 */
+        overflow-y: auto; /* 垂直方向可滚动 */
+        scrollbar-width: thin; /* Firefox 滚动条样式 */
+        scrollbar-color: #2a2a4a #16213e; /* Firefox 滚动条颜色 */
+        position: relative; /* 为自动滚动添加相对定位 */
+    }
+    
+    /* WebKit 浏览器的滚动条样式 */
+    .material-health::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .material-health::-webkit-scrollbar-track {
+        background: #16213e;
+        border-radius: 4px;
+    }
+    
+    .material-health::-webkit-scrollbar-thumb {
+        background-color: #2a2a4a;
+        border-radius: 4px;
+    }
+    
+    .material-health::-webkit-scrollbar-thumb:hover {
+        background-color: #3a3a6a;
+    }
+    
+    .health-indicator {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #2a2a4a;
+    }
+    
+    .health-indicator:last-child {
+        border-bottom: none;
+    }
+    
+    .health-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .health-bar {
+        flex: 2;
+        background-color: #2a2a4a;
+        height: 8px;
+        border-radius: 4px;
+        margin: 0 10px;
+        position: relative;
+    }
+    
+    .health-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        border-radius: 4px;
+    }
+    
+    .health-value {
+        flex: 0 0 50px;
+        text-align: right;
+    }
+    
+    .life-status {
+        display: flex;
+        align-items: center;
+    }
+    
+    .life-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .critical {
+        background-color: #e74c3c;
+    }
+    
+    .warning {
+        background-color: #f39c12;
+    }
+    
+    .normal {
+        background-color: #2ecc71;
+    }
+    
+    .system-info-card {
+        background-color: #16213e;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        height: 100%;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .system-info-header {
+        border-bottom: 1px solid #2a2a4a;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+    }
+    
+    .info-label {
+        color: #aaa;
+    }
+    
+    .navigation-card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background-color: #16213e;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        height: 100%;
+    }
+    
+    .nav-button {
+        text-align: center;
+        padding: 15px;
+        margin: 10px 0;
+        background: linear-gradient(90deg, #0f3460, #533483);
+        border-radius: 5px;
+        transition: all 0.3s;
+    }
+    
+    .nav-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    
+    @media (max-width: 992px) {
+        .chart-container {
+            min-height: 200px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h2><i class="fas fa-tachometer-alt me-2"></i>金属多轴疲劳寿命监控系统</h2>
+            </div>
+            <div class="col-md-6 text-end">
+                <h4 id="dashboard-date">{{ now.strftime('%Y年%m月%d日 %H:%M:%S') if now else '加载中...' }}</h4>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="row">
+                    <div class="col-3 text-center">
+                        <i class="fas fa-database fa-2x"></i>
+                    </div>
+                    <div class="col-9">
+                        <div class="status-label">分析样本数</div>
+                        <div id="sample-count" class="status-value">
+                            {{ total_samples }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="row">
+                    <div class="col-3 text-center">
+                        <i class="fas fa-microscope fa-2x"></i>
+                    </div>
+                    <div class="col-9">
+                        <div class="status-label">材料种类</div>
+                        <div id="material-count" class="status-value">{{ prediction_stats.material_stats|length if prediction_stats.material_stats else 0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="row">
+                    <div class="col-3 text-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                    <div class="col-9">
+                        <div class="status-label">预测准确率</div>
+                        <div id="accuracy" class="status-value">{{ "%.2f%%"|format(prediction_stats.results.r2 * 100) if prediction_stats.results and prediction_stats.results.r2 > 0 else 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="status-card">
+                <div class="row">
+                    <div class="col-3 text-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                    <div class="col-9">
+                        <div class="status-label">预警状态</div>
+                        <div id="warning-status" class="status-value">正常</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <div class="chart-card" style="height:520px;">
+                        <div class="chart-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>材料真实寿命与预测寿命对比</h5>
+                            <div class="d-flex align-items-center">
+                                <select id="material-selector" class="form-select form-select-sm me-2 bg-dark text-light border-secondary">
+                                    <option value="">请选择材料...</option>
+                                    {% if prediction_stats.material_stats %}
+                                        {% for material in prediction_stats.material_stats.keys() %}
+                                            <option value="{{ material }}">{{ material }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <button class="btn btn-sm btn-outline-light refresh-btn" data-chart="trend-chart">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <div id="trend-chart" class="chart-container" style="height:395px; max-height:395px;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>寿命分布分析</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-light refresh-btn" data-chart="distribution-chart">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <div id="distribution-chart" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h5 class="mb-0"><i class="fas fa-brain me-2"></i>材料寿命误差分布</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-light refresh-btn" data-chart="factor-chart">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <div id="factor-chart" class="chart-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <div class="chart-card" style="height:520px;">
+                        <div class="chart-header">
+                            <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>材料寿命状态 <small class="text-light-50"></small></h5>
+                            <div>
+                                <button id="toggle-scroll" class="btn btn-sm btn-outline-light" title="开启/关闭自动滚动">
+                                    <i class="fas fa-pause"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <div class="material-health" style="height:395px; max-height:395px;">
+                                <div id="material-health-indicators">
+                                    {% if prediction_stats.material_stats %}
+                                        {% for material, stats in prediction_stats.material_stats.items() %}
+                                            {% if stats.predictions is defined and stats.predictions|length > 0 %}
+                                                {# 使用预定义的材料平均寿命数据 #}
+                                                {% set material_avg_lifetimes = {
+                                                    '304SS': 4.5770,
+                                                    'S460N': 4.3950,
+                                                    '1045HR': 4.3779,
+                                                    'mild': 4.3464,
+                                                    '16MnR': 4.2196,
+                                                    'Al5083': 4.2102,
+                                                    'ZK60': 4.0654,
+                                                    'inconel718': 3.9312,
+                                                    '7075-T651': 3.9160,
+                                                    'AZ61A': 3.8887,
+                                                    'CuZn37': 3.8603,
+                                                    'S347': 3.7934,
+                                                    '1Cr18Ni9T': 3.6564,
+                                                    'Haynes188': 3.6321,
+                                                    'PA38': 3.6309,
+                                                    'CS': 3.6293,
+                                                    'E355': 3.5996,
+                                                    'q235b': 3.5977,
+                                                    '410': 3.5815,
+                                                    'AISI 316L': 3.5424,
+                                                    'E235': 3.5401,
+                                                    'AZ31B': 3.5084,
+                                                    'X5CrNi': 3.4904,
+                                                    'CP-Ti': 3.4775,
+                                                    'TC4': 3.4748,
+                                                    'HRB335': 3.4139,
+                                                    'CA': 3.3673,
+                                                    'SNCM630': 3.3153,
+                                                    'S45C': 3.2777,
+                                                    'pureTi': 3.0046,
+                                                    '6061-T6': 2.9846,
+                                                    '45mild': 2.9052,
+                                                    '2024-T3': 2.7967,
+                                                    'BT9': 2.6427,
+                                                    'GH4169': 2.6246
+                                                } %}
+                                                
+                                                {% set avg_pred = (stats.predictions|sum) / stats.predictions|length %}
+                                                {% set material_avg = material_avg_lifetimes.get(material, 3.5) %}
+                                                {% set health_ratio = (avg_pred / material_avg) if material_avg > 0 else 0 %}
+                                                {% set health_percent = (health_ratio * 100)|int if health_ratio <= 1 else 100 %}
+                                                {% set health_color = '#e74c3c' if health_percent < 70 else '#f39c12' if health_percent < 90 else '#2ecc71' %}
+                                                {% set status_class = 'critical' if health_percent < 70 else 'warning' if health_percent < 90 else 'normal' %}
+                                            {% else %}
+                                                {% set avg_pred = 0 %}
+                                                {% set health_percent = 0 %}
+                                                {% set health_color = '#e74c3c' %}
+                                                {% set status_class = 'critical' %}
+                                            {% endif %}
+                                            
+                                            <div class="health-indicator">
+                                                <div class="health-name">
+                                                    <div class="life-status">
+                                                        <div class="life-indicator {{ status_class }}"></div>
+                                                        {{ material }}
+                                                    </div>
+                                                </div>
+                                                <div class="health-bar">
+                                                    <div class="health-fill" style="width: {{ health_percent }}%; background-color: {{ health_color }};"></div>
+                                                </div>
+                                                <div class="health-value">{{ health_percent }}%</div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center py-4">
+                                            <p>暂无材料寿命数据</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-12 mb-4">
+                    <div class="system-info-card">
+                        <div class="system-info-header">
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>系统信息</h5>
+                        </div>
+                        <div>
+                            <div class="info-item">
+                                <div class="info-label">模型版本</div>
+                                <div>v2.1.0</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">上次更新时间</div>
+                                <div id="last-update-time">{{ now.strftime('%Y-%m-%d %H:%M') if now else '加载中...' }}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">数据源</div>
+                                <div>多轴疲劳实验数据库</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">系统状态</div>
+                                <div><span class="badge bg-success">正常</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-12">
+                    <div class="navigation-card">
+                        <div>
+                            <h5><i class="fas fa-link me-2"></i>快速操作</h5>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('train') }}" class="nav-button d-block text-white text-decoration-none">
+                                <i class="fas fa-graduation-cap fa-lg mb-2"></i>
+                                <div>训练新模型</div>
+                            </a>
+                            <a href="{{ url_for('predict') }}" class="nav-button d-block text-white text-decoration-none">
+                                <i class="fas fa-chart-line fa-lg mb-2"></i>
+                                <div>寿命预测</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 存储材料数据，供JavaScript使用 -->
+<script>
+    // 将后端数据直接嵌入到JavaScript变量中
+    var initialData = {
+        materials: {{ prediction_stats.material_stats.keys()|list|tojson|default('[]') if prediction_stats.material_stats else '[]' }},
+        sampleCount: {{ total_samples|default(0) }},
+        hasResults: {{ 'true' if prediction_stats.results and prediction_stats.results.targets else 'false' }},
+        accuracy: {% if prediction_stats.results and prediction_stats.results.r2 is defined %}
+            {{ "%.2f"|format(prediction_stats.results.r2 * 100) }}
+        {% else %}
+            null
+        {% endif %}
+    };
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // 更新日期和时间
+        function updateDateTime() {
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+            
+            $('#dashboard-date').text(now.toLocaleDateString('zh-CN', dateOptions) + ' ' + now.toLocaleTimeString('zh-CN', timeOptions));
+            $('#current-date').text(now.toLocaleDateString('zh-CN', dateOptions));
+            $('#current-time').text(now.toLocaleTimeString('zh-CN', timeOptions));
+            $('#last-update-time').text(now.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + 
+                                     now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }));
+        }
+        
+        // 每秒更新一次时间
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        
+        // 材料健康自动滚动功能
+        var autoScrollEnabled = true;
+        var scrollSpeed = 0.7; // 降低滚动速度，使其更平滑
+        var scrollInterval;
+        var $materialHealth = $('.material-health');
+        
+        function startAutoScroll() {
+            if (!autoScrollEnabled) return;
+            
+            var contentHeight = $materialHealth[0].scrollHeight;
+            var containerHeight = $materialHealth.height();
+            
+            // 只有当内容高度大于容器高度时才需要滚动
+            if (contentHeight <= containerHeight) return;
+            
+            clearInterval(scrollInterval);
+            scrollInterval = setInterval(function() {
+                var currentScroll = $materialHealth.scrollTop();
+                var maxScroll = contentHeight - containerHeight;
+                
+                // 如果已经滚动到底部，则添加短暂停顿后重新开始
+                if (currentScroll >= maxScroll) {
+                    clearInterval(scrollInterval);
+                    setTimeout(function() {
+                        $materialHealth.animate({ scrollTop: 0 }, 800, function() {
+                            startAutoScroll();
+                        });
+                    }, 2000); // 在底部停留2秒
+                } else {
+                    $materialHealth.scrollTop(currentScroll + scrollSpeed);
+                }
+            }, 30); // 更高的频率，更平滑的滚动
+        }
+        
+        function stopAutoScroll() {
+            clearInterval(scrollInterval);
+        }
+        
+        // 当鼠标悬停在区域上时暂停滚动，移出时继续
+        $materialHealth.on('mouseenter', function() {
+            stopAutoScroll();
+        }).on('mouseleave', function() {
+            if (autoScrollEnabled) {
+                startAutoScroll();
+            }
+        });
+        
+        // 当用户滚轮操作后，记住当前位置
+        $materialHealth.on('wheel', function() {
+            // 停止自动滚动，让用户控制
+            stopAutoScroll();
+            // 如果启用了自动滚动，则用户操作结束5秒后恢复
+            if (autoScrollEnabled) {
+                setTimeout(function() {
+                    startAutoScroll();
+                }, 5000);
+            }
+        });
+        
+        // 在页面加载后延迟一秒开始自动滚动（给内容加载的时间）
+        setTimeout(startAutoScroll, 1000);
+        
+        // 自动滚动开关按钮点击事件
+        $('#toggle-scroll').on('click', function() {
+            autoScrollEnabled = !autoScrollEnabled;
+            if (autoScrollEnabled) {
+                $(this).html('<i class="fas fa-pause"></i>');
+                $(this).attr('title', '暂停滚动');
+                startAutoScroll();
+            } else {
+                $(this).html('<i class="fas fa-play"></i>');
+                $(this).attr('title', '开始滚动');
+                stopAutoScroll();
+            }
+        });
+        
+        // 设置初始状态为自动滚动（按钮显示暂停图标）
+        autoScrollEnabled = true;
+        
+        // 初始化图表
+        var trendChart = echarts.init(document.getElementById('trend-chart'));
+        var distributionChart = echarts.init(document.getElementById('distribution-chart'));
+        var factorChart = echarts.init(document.getElementById('factor-chart'));
+        
+        // 获取材料数据
+        var materialNames = [];
+        var materialData = {};
+        var materialsLoaded = false;
+        
+        try {
+            // 使用直接嵌入的JavaScript变量
+            if (typeof initialData !== 'undefined' && initialData.materials) {
+                materialNames = Array.isArray(initialData.materials) ? initialData.materials : [];
+                materialsLoaded = materialNames.length > 0;
+                
+                if (materialsLoaded) {
+                    console.log("成功加载材料数据:", materialNames);
+                } else {
+                    console.log("材料数据为空，将使用演示数据");
+                }
+                
+                // 请求获取更详细的材料统计数据
+                $.ajax({
+                    url: "{{ url_for('prediction_status') }}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(data) {
+                        if (data && data.material_stats && Object.keys(data.material_stats).length > 0) {
+                            console.log("成功获取材料统计数据");
+                            materialData = data.material_stats;
+                            updateDashboardWithRealData(data.material_stats, data.results);
+                            
+                            // 初始化材料选择器事件
+                            initializeMaterialSelector();
+                        } else {
+                            console.warn("获取的材料统计数据为空");
+                            updateDashboardWithDemoData();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("获取材料统计数据失败:", status, error);
+                        // 如果获取失败，仍使用默认数据
+                        updateDashboardWithDemoData();
+                    }
+                });
+            } else {
+                console.log("初始数据未定义或无效，使用演示数据");
+                updateDashboardWithDemoData();
+            }
+        } catch (e) {
+            console.error("处理材料数据时出错:", e);
+            updateDashboardWithDemoData();
+        }
+        
+        // 初始化材料选择器事件
+        function initializeMaterialSelector() {
+            $('#material-selector').on('change', function() {
+                var selectedMaterial = $(this).val();
+                if (selectedMaterial) {
+                    updateLifeCurveChart(selectedMaterial);
+                } else {
+                    // 如果没有选择材料，显示默认视图
+                    showDefaultTrendChart();
+                }
+            });
+            
+            // 默认选择第一个材料（如果有）
+            if (materialNames.length > 0) {
+                $('#material-selector').val(materialNames[0]).trigger('change');
+            } else {
+                showDefaultTrendChart();
+            }
+        }
+        
+        // 根据选择的材料更新寿命曲线图表
+        function updateLifeCurveChart(materialName) {
+            if (!materialData[materialName]) {
+                console.error("未找到所选材料的数据:", materialName);
+                return;
+            }
+            
+            var targets = materialData[materialName].targets || [];
+            var predictions = materialData[materialName].predictions || [];
+            
+            if (targets.length === 0 || predictions.length === 0) {
+                console.warn("所选材料没有足够的数据进行绘图");
+                return;
+            }
+            
+            console.log(`绘制 ${materialName} 的寿命曲线, 数据点数: ${targets.length}`);
+            
+            // 为了展示为曲线，将单个点的数据转换为索引（X轴）和值（Y轴）的数据系列
+            var targetSeries = [];
+            var predictionSeries = [];
+            
+            // 修改：确保从0开始，这样图表会显示从1开始的所有点
+            for (var i = 0; i < targets.length; i++) {
+                targetSeries.push([i, targets[i]]);
+                predictionSeries.push([i, predictions[i]]);
+            }
+            
+            // 准备X轴标签 - 从样本1开始
+            var xAxisLabels = [];
+            for (var i = 1; i <= targets.length; i++) {
+                xAxisLabels.push('样本' + i);
+            }
+            
+            // 更新寿命曲线图表
+            var lifeCurveOption = {
+                title: {
+                    text: materialName + ' 疲劳寿命对比',
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        // 直接使用轴标签作为样本标识，不需要再解析为数字
+                        var result = params[0].axisValue + '<br/>';
+                        params.forEach(function(param) {
+                            result += param.marker + ' ' + param.seriesName + ': ' + param.value[1].toFixed(4) + '<br/>';
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['真实寿命', '预测寿命'],
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                grid: {
+                    left: '5%',  // 增加左侧空间，确保第一个点显示
+                    right: '5%',
+                    bottom: '5%',
+                    top: '15%',   // 增加顶部空间，保证标题显示
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: xAxisLabels,
+                    boundaryGap: true,  // 添加边界间隔
+                    axisLabel: {
+                        color: '#ccc',
+                        rotate: 45,
+                        interval: targets.length <= 20 ? 0 : Math.max(1, Math.floor(targets.length / 15))  // 样本少时显示所有标签
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '疲劳寿命值',
+                    nameTextStyle: {
+                        color: '#ccc'
+                    },
+                    axisLabel: {
+                        color: '#ccc'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '真实寿命',
+                        type: 'line',
+                        data: targetSeries,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 8,  // 增大点的大小使其更明显
+                        itemStyle: {
+                            color: '#2ecc71'
+                        },
+                        lineStyle: {
+                            width: 3
+                        }
+                    },
+                    {
+                        name: '预测寿命',
+                        type: 'line',
+                        data: predictionSeries,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 8,  // 增大点的大小使其更明显
+                        itemStyle: {
+                            color: '#3498db'
+                        },
+                        lineStyle: {
+                            width: 3
+                        }
+                    }
+                ]
+            };
+            
+            trendChart.setOption(lifeCurveOption, true);
+            
+            // 确保图表重新渲染并适应容器大小
+            setTimeout(function() {
+                trendChart.resize();
+            }, 200);
+        }
+        
+        // 显示默认趋势图（当没有选择材料时）
+        function showDefaultTrendChart() {
+            var defaultOption = {
+                title: {
+                    text: '请选择材料查看真实与预测寿命对比',
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    axisLabel: {
+                        color: '#ccc'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '疲劳寿命值',
+                    nameTextStyle: {
+                        color: '#ccc'
+                    },
+                    axisLabel: {
+                        color: '#ccc'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    }
+                },
+                series: []
+            };
+            
+            trendChart.setOption(defaultOption, true);
+        }
+        
+        // 使用真实数据更新仪表板
+        function updateDashboardWithRealData(materialStats, results) {
+            if (!materialStats || Object.keys(materialStats).length === 0) {
+                updateDashboardWithDemoData();
+                return;
+            }
+            
+            // 提取真实材料数据
+            var realMaterialNames = Object.keys(materialStats).sort();
+            var materialSampleData = [];
+            
+            // 计算总样本数
+            var totalSamples = 0;
+            
+            // 获取所有材料的预测寿命和真实寿命数据，用于关键影响因素分析
+            var allPredictions = [];
+            var allTargets = [];
+            var materialLifeData = [];
+            
+            // 准备分布图数据
+            realMaterialNames.forEach(function(material) {
+                var stats = materialStats[material];
+                var sampleCount = stats.sample_count || 0;
+                totalSamples += sampleCount;
+                
+                // 收集样本数据用于排序
+                materialSampleData.push({
+                    name: material,
+                    value: sampleCount
+                });
+                
+                // 收集各材料的平均寿命数据用于因素分析
+                if (stats.predictions && stats.predictions.length > 0 && stats.targets && stats.targets.length > 0) {
+                    var avgPrediction = stats.predictions.reduce((a, b) => a + b, 0) / stats.predictions.length;
+                    var avgTarget = stats.targets.reduce((a, b) => a + b, 0) / stats.targets.length;
+                    
+                    materialLifeData.push({
+                        material: material,
+                        avgPrediction: avgPrediction,
+                        avgTarget: avgTarget,
+                        error: Math.abs(avgPrediction - avgTarget),
+                        sampleCount: sampleCount
+                    });
+                    
+                    // 收集所有预测和真实值，用于总体分析
+                    allPredictions = allPredictions.concat(stats.predictions);
+                    allTargets = allTargets.concat(stats.targets);
+                }
+            });
+            
+            // 按样本数量排序，获取前10名材料
+            materialSampleData.sort(function(a, b) {
+                return b.value - a.value; // 降序排序
+            });
+            
+            // 准备饼图数据 - 只取前10个材料，其余归为"其他"类别
+            var distributionData = [];
+            var otherSampleCount = 0;
+            
+            materialSampleData.forEach(function(item, index) {
+                if (index < 10) {
+                    // 前10名材料单独显示
+                    distributionData.push(item);
+                } else {
+                    // 其余材料归为"其他"类别
+                    otherSampleCount += item.value;
+                }
+            });
+            
+            // 如果有其他材料，添加到数据中
+            if (otherSampleCount > 0) {
+                distributionData.push({
+                    name: '其他材料',
+                    value: otherSampleCount
+                });
+            }
+            
+            // 更新样本计数
+            $("#sample-count").text(totalSamples);
+            
+            // 更新分布图 - 使用真实的样本分布数据
+            var distributionOption = {
+                title: {
+                    text: '各材料样本分布',
+                    left: 'center',
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+            tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+            },
+            legend: {
+                    type: 'scroll',
+                    orient: 'vertical',
+                    right: 10,
+                    top: 20,
+                    bottom: 20,
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+            series: [
+                {
+                        name: '样本数量',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#16213e',
+                        borderWidth: 2
+                    },
+                    label: {
+                            show: false
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '14',
+                            fontWeight: 'bold',
+                            color: '#fff'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                        data: distributionData
+                    }
+                ]
+            };
+            distributionChart.setOption(distributionOption, true);
+            
+            // 对材料寿命数据进行排序，用于关键影响因素分析
+            materialLifeData.sort((a, b) => b.avgTarget - a.avgTarget);
+            
+            // 提取排名前10的材料进行展示
+            var topMaterials = materialLifeData.slice(0, Math.min(10, materialLifeData.length));
+            
+            var materialNames = topMaterials.map(item => item.material);
+            var targetValues = topMaterials.map(item => item.avgTarget);
+            var predictionValues = topMaterials.map(item => item.avgPrediction);
+            
+            // 为误差分布图准备数据
+            var errorDistData = materialLifeData.map(item => [
+                item.avgTarget,         // x轴: 实际寿命
+                item.error,             // y轴: 预测误差
+                item.sampleCount,       // 样本数量(影响点的大小)
+                item.material           // 材料名称
+            ]);
+            
+            // 更新因素图 - 使用真实材料寿命对比数据
+        var factorOption = {
+            title: {
+                    text: '材料寿命预测误差分布',
+                    left: 'center',
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        var material = params.name || params.value[3];
+                        return material + '<br/>' +
+                               '实际寿命: ' + params.value[0].toFixed(4) + '<br/>' +
+                               '预测误差: ' + params.value[1].toFixed(4) + '<br/>' +
+                               '样本数量: ' + params.value[2];
+                    }
+                },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                    name: '实际寿命值',
+                    nameTextStyle: {
+                        color: '#ccc'
+                    },
+                axisLabel: {
+                    color: '#ccc'
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#2a2a4a'
+                    }
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#2a2a4a'
+                    }
+                }
+            },
+            yAxis: {
+                    type: 'value',
+                    name: '预测误差',
+                    nameTextStyle: {
+                        color: '#ccc'
+                    },
+                axisLabel: {
+                    color: '#ccc'
+                },
+                axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    },
+                    splitLine: {
+                    lineStyle: {
+                        color: '#2a2a4a'
+                    }
+                }
+            },
+            series: [
+                {
+                        name: '误差分布',
+                        type: 'scatter',
+                        symbolSize: function(data) {
+                            // 根据样本数量调整点的大小
+                            return Math.sqrt(data[2]) * 5;
+                        },
+                    itemStyle: {
+                        color: function(params) {
+                                // 根据误差大小设置颜色
+                                var error = Math.abs(params.value[1]);
+                                if (error < 0.1) return '#2ecc71'; // 绿色
+                                if (error < 0.2) return '#3498db'; // 蓝色
+                                if (error < 0.3) return '#f1c40f'; // 黄色
+                                return '#e74c3c'; // 红色
+                            }
+                        },
+                        data: errorDistData
+                    }
+                ]
+            };
+            factorChart.setOption(factorOption, true);
+            
+            // 更新预警状态
+            updateWarningStatus(materialStats);
+            
+            // 更新准确率显示
+            if (results) {
+                updateAccuracy(results);
+            }
+        }
+        
+        // 当窗口大小改变时，重置图表大小
+        window.addEventListener('resize', function() {
+            trendChart.resize();
+            distributionChart.resize();
+            factorChart.resize();
+        });
+        
+        // 刷新按钮点击事件
+        $('.refresh-btn').click(function() {
+            var chartId = $(this).data('chart');
+            var chart = echarts.getInstanceByDom(document.getElementById(chartId));
+            
+            if (chart) {
+                // 添加加载动画
+                chart.showLoading();
+                
+                // 获取最新的预测数据
+                $.ajax({
+                    url: "{{ url_for('prediction_status') }}",
+                    type: "GET",
+                    dataType: "json",
+                    success: function(data) {
+                        // 隐藏加载动画
+                        chart.hideLoading();
+                        
+                        if (data.material_stats) {
+                            updateDashboardWithRealData(data.material_stats, data.results);
+                        } else {
+                            // 如果没有数据，则使用演示数据
+                            updateDashboardWithDemoData();
+                        }
+                    },
+                    error: function() {
+                        // 隐藏加载动画
+                        chart.hideLoading();
+                        console.error("获取预测状态时发生错误");
+                    }
+                });
+            }
+        });
+        
+        // 更新使用演示数据的仪表板
+        function updateDashboardWithDemoData() {
+            // 确保仪表板可见
+            $("#dashboard-container").removeClass('d-none');
+            
+            // 生成示例数据
+            var demoMaterials = ["A36钢", "Q235钢", "Q345钢", "304不锈钢", "316不锈钢", "铝合金7075", "铝合金6061", "钛合金TC4", 
+                                "镍基合金GH4169", "铸铁HT200", "铸铁HT250", "铜合金HPb63-3", "铝青铜", "镁合金AZ31B", "纯铁",
+                                "纯铜", "45号钢", "40Cr钢", "35CrMo钢", "20钢"];
+            var materialSampleData = [];
+            var totalSamples = 0;
+            
+            // 生成随机样本数
+            for (var i = 0; i < demoMaterials.length; i++) {
+                var sampleCount = Math.floor(Math.random() * 1000) + 100;
+                totalSamples += sampleCount;
+                materialSampleData.push({
+                    name: demoMaterials[i],
+                    value: sampleCount
+                });
+            }
+            
+            // 按样本数量排序，获取前10名材料
+            materialSampleData.sort(function(a, b) {
+                return b.value - a.value; // 降序排序
+            });
+            
+            // 准备饼图数据 - 只取前10个材料，其余归为"其他"类别
+            var distributionData = [];
+            var otherSampleCount = 0;
+            
+            materialSampleData.forEach(function(item, index) {
+                if (index < 10) {
+                    // 前10名材料单独显示
+                    distributionData.push(item);
+                } else {
+                    // 其余材料归为"其他"类别
+                    otherSampleCount += item.value;
+                }
+            });
+            
+            // 如果有其他材料，添加到数据中
+            if (otherSampleCount > 0) {
+                distributionData.push({
+                    name: '其他材料',
+                    value: otherSampleCount
+                });
+            }
+            
+            // 更新样本计数
+            $("#sample-count").text(totalSamples);
+            
+            // 更新分布图 - 使用示例样本分布数据
+            var distributionOption = {
+                title: {
+                    text: '各材料样本分布（演示数据）',
+                    left: 'center',
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    type: 'scroll',
+                    orient: 'vertical',
+                    right: 10,
+                    top: 20,
+                    bottom: 20,
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                series: [
+                    {
+                        name: '样本数量',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#16213e',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '14',
+                                fontWeight: 'bold',
+                                color: '#fff'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: distributionData
+                    }
+                ]
+            };
+            distributionChart.setOption(distributionOption, true);
+            
+            // 生成示例材料寿命数据
+            var materialLifeData = [];
+            var errorDistData = [];
+            
+            // 为演示数据生成示例值
+            for (var i = 0; i < Math.min(15, demoMaterials.length); i++) {
+                var avgTarget = 3 + Math.random() * 2;  // 真实寿命值范围在3-5之间
+                var error = Math.random() * 0.5;        // 误差范围在0-0.5之间
+                var sampleCount = distributionData[i < 10 ? i : 10].value;
+                
+                if (i < 10) {
+                    materialLifeData.push({
+                        material: demoMaterials[i],
+                        avgTarget: avgTarget,
+                        error: error,
+                        sampleCount: sampleCount
+                    });
+                }
+                
+                errorDistData.push([
+                    avgTarget,           // x轴: 实际寿命
+                    error,               // y轴: 预测误差
+                    sampleCount,         // 样本数量(影响点的大小)
+                    demoMaterials[i]     // 材料名称
+                ]);
+            }
+            
+            // 更新误差分布图
+            var factorOption = {
+                title: {
+                    text: '材料寿命预测误差分布（演示数据）',
+                    left: 'center',
+                    textStyle: {
+                        color: '#fff'
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        var material = params.name || params.value[3];
+                        return material + '<br/>' +
+                               '实际寿命: ' + params.value[0].toFixed(4) + '<br/>' +
+                               '预测误差: ' + params.value[1].toFixed(4) + '<br/>' +
+                               '样本数量: ' + params.value[2];
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'value',
+                    name: '实际寿命值',
+                    nameTextStyle: {
+                        color: '#ccc'
+                    },
+                    axisLabel: {
+                        color: '#ccc'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '预测误差',
+                    nameTextStyle: {
+                        color: '#ccc'
+                    },
+                    axisLabel: {
+                        color: '#ccc'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#2a2a4a'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '误差分布',
+                        type: 'scatter',
+                        symbolSize: function(data) {
+                            // 根据样本数量调整点的大小
+                            return Math.sqrt(data[2]) * 0.2;
+                        },
+                        itemStyle: {
+                            color: function(params) {
+                                // 根据误差大小设置颜色
+                                var error = Math.abs(params.value[1]);
+                                if (error < 0.1) return '#2ecc71'; // 绿色
+                                if (error < 0.2) return '#3498db'; // 蓝色
+                                if (error < 0.3) return '#f1c40f'; // 黄色
+                                return '#e74c3c'; // 红色
+                            }
+                        },
+                        data: errorDistData
+                    }
+                ]
+            };
+            factorChart.setOption(factorOption, true);
+            
+            // 更新材料选择器
+            $('#material-selector').empty().append('<option value="">请选择材料...</option>');
+            for (var i = 0; i < demoMaterials.length; i++) {
+                $('#material-selector').append('<option value="' + demoMaterials[i] + '">' + demoMaterials[i] + '</option>');
+            }
+            
+            // 生成模拟的统计数据用于健康度显示
+            var demoMaterialStats = {};
+            for (var i = 0; i < demoMaterials.length; i++) {
+                var sampleCount = Math.floor(Math.random() * 1000) + 100;
+                var predictions = [];
+                var targets = [];
+                
+                // 生成样本数据
+                for (var j = 0; j < Math.floor(Math.random() * 20) + 5; j++) {
+                    var baseValue = 3 + Math.random() * 2;
+                    targets.push(baseValue);
+                    predictions.push(baseValue + (Math.random() - 0.5) * 0.6);
+                }
+                
+                demoMaterialStats[demoMaterials[i]] = {
+                    sample_count: sampleCount,
+                    predictions: predictions,
+                    targets: targets
+                };
+            }
+            
+            // 更新预警状态
+            updateWarningStatus(demoMaterialStats);
+            
+            // 更新准确率显示
+            var demoR2 = 0.75 + Math.random() * 0.2;
+            updateAccuracy({ r2: demoR2 });
+            
+            // 使用演示数据初始化材料选择器
+            initializeMaterialSelector();
+            materialData = demoMaterialStats;
+            materialNames = demoMaterials;
+            
+            // 选择第一个材料
+            if (demoMaterials.length > 0) {
+                $('#material-selector').val(demoMaterials[0]).trigger('change');
+            }
+        }
+        
+        // 更新预警状态
+        function updateWarningStatus(materialStats) {
+            if (!materialStats) return;
+            
+            var criticalCount = 0;
+            var warningCount = 0;
+            var totalCount = Object.keys(materialStats).length;
+            
+            // 材料平均寿命数据
+            var materialAvgLifetimes = {
+                '304SS': 4.5770,
+                'S460N': 4.3950,
+                '1045HR': 4.3779,
+                'mild': 4.3464,
+                '16MnR': 4.2196,
+                'Al5083': 4.2102,
+                'ZK60': 4.0654,
+                'inconel718': 3.9312,
+                '7075-T651': 3.9160,
+                'AZ61A': 3.8887,
+                'CuZn37': 3.8603,
+                'S347': 3.7934,
+                '1Cr18Ni9T': 3.6564,
+                'Haynes188': 3.6321,
+                'PA38': 3.6309,
+                'CS': 3.6293,
+                'E355': 3.5996,
+                'q235b': 3.5977,
+                '410': 3.5815,
+                'AISI 316L': 3.5424,
+                'E235': 3.5401,
+                'AZ31B': 3.5084,
+                'X5CrNi': 3.4904,
+                'CP-Ti': 3.4775,
+                'TC4': 3.4748,
+                'HRB335': 3.4139,
+                'CA': 3.3673,
+                'SNCM630': 3.3153,
+                'S45C': 3.2777,
+                'pureTi': 3.0046,
+                '6061-T6': 2.9846,
+                '45mild': 2.9052,
+                '2024-T3': 2.7967,
+                'BT9': 2.6427,
+                'GH4169': 2.6246
+            };
+            
+            // 检查每个材料的状态
+            for (var material in materialStats) {
+                var stats = materialStats[material];
+                
+                // 计算预测值的平均值
+                var avgPrediction = 0;
+                
+                if (stats.predictions && stats.predictions.length > 0) {
+                    avgPrediction = stats.predictions.reduce((a, b) => a + b, 0) / stats.predictions.length;
+                }
+                
+                // 获取材料的标准平均寿命
+                var materialAvg = materialAvgLifetimes[material] || 3.5; // 使用3.5作为默认值
+                
+                // 计算健康比例
+                var healthRatio = materialAvg > 0 ? (avgPrediction / materialAvg) : 0;
+                var healthPercent = healthRatio <= 1 ? healthRatio * 100 : 100;
+                
+                if (healthPercent < 70) {
+                    criticalCount++;
+                } else if (healthPercent < 90) {
+                    warningCount++;
+                }
+            }
+            
+            // 更新预警状态
+            if (criticalCount > 0) {
+                $('#warning-status').text('危险').css('color', '#e74c3c');
+            } else if (warningCount > 0) {
+                $('#warning-status').text('警告').css('color', '#f39c12');
+            } else if (totalCount > 0) {
+                $('#warning-status').text('正常').css('color', '#2ecc71');
+            } else {
+                $('#warning-status').text('未知').css('color', '#95a5a6');
+            }
+        }
+        
+        // 更新准确率显示
+        function updateAccuracy(results) {
+            var accuracyElement = $('#accuracy');
+            if (results && typeof results.r2 !== 'undefined' && results.r2 !== null) {
+                var accuracy = (results.r2 * 100).toFixed(2);
+                if (accuracy > 0) {
+                    accuracyElement.text(accuracy + '%');
+                    // 根据准确率设置颜色
+                    if (accuracy >= 90) {
+                        accuracyElement.css('color', '#2ecc71'); // 绿色
+                    } else if (accuracy >= 70) {
+                        accuracyElement.css('color', '#f1c40f'); // 黄色
+                    } else {
+                        accuracyElement.css('color', '#e74c3c'); // 红色
+                    }
+                } else {
+                    accuracyElement.text('N/A').css('color', '');
+                    console.warn('准确率小于或等于0:', accuracy);
+                }
+            } else {
+                accuracyElement.text('N/A').css('color', '');
+                console.warn('无有效的准确率数据');
+            }
+        }
+        
+        // 在初始化时更新准确率
+        if (initialData.accuracy !== null) {
+            updateAccuracy({ r2: initialData.accuracy / 100 });
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,2856 @@
+{% extends "base.html" %}
+
+{% block title %}寿命预测 - 金属多轴疲劳寿命预测系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 粒子背景效果 */
+    .particles-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+    }
+
+    .chart-container {
+        height: 400px;
+        margin-bottom: 20px;
+    }
+    .prediction-status {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    .material-card {
+        transition: all 0.3s;
+    }
+    .material-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-5px);
+    }
+    .metrics-card {
+        border-left: 4px solid #2980b9;
+    }
+    .equal-height-cards {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .equal-height-cards .card-body {
+        flex: 1 1 auto;
+    }
+    .select-container {
+        position: relative;
+        min-width: 240px;
+        z-index: 10;
+    }
+
+    .select-container select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        width: 100%;
+        padding: 10px 15px;
+        padding-right: 40px;
+        font-size: 0.95rem;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.2);
+        background-color: rgba(255,255,255,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: pointer;
+        color: #fff;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        backdrop-filter: blur(5px);
+    }
+
+    /* 修复下拉框选项文本颜色 */
+    .select-container select option {
+        color: #333;
+        background-color: #fff;
+        padding: 10px;
+        font-weight: normal;
+    }
+    
+    /* 为不同浏览器提供更一致的下拉框体验 */
+    .select-container select option:hover,
+    .select-container select option:focus,
+    .select-container select option:checked {
+        background-color: #f0f7ff;
+        color: #2c3e50;
+    }
+    
+    /* 下拉框打开时的样式增强 */
+    .select-container select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.25), 0 4px 12px rgba(0,0,0,0.15);
+        background-color: rgba(255,255,255,0.15);
+    }
+
+    .select-container select:hover {
+        border-color: #3498db;
+        background-color: rgba(255,255,255,0.15);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .select-container select.active {
+        transform: translateY(0);
+    }
+
+    .select-container:after {
+        content: "\f107";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #3498db;
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        font-size: 1.2rem;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .select-container:hover:after {
+        transform: translateY(-50%) rotate(180deg);
+        text-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* 材料详细分析卡片样式 */
+    .material-analysis-card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    
+    .material-analysis-card:hover {
+        box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        transform: translateY(-5px);
+    }
+    
+    .material-analysis-card .card-header {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .material-analysis-card .card-header:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(52, 152, 219, 0.2) 0%, rgba(52, 152, 219, 0) 50%);
+    }
+    
+    .material-analysis-card .card-header .mb-0 {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .material-info-section {
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .material-info-section:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+    }
+    
+    .material-info-section .card-header {
+        border-bottom: none;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .material-info-section .card-header:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 10%;
+        width: 80%;
+        height: 1px;
+        background: rgba(0,0,0,0.1);
+    }
+    
+    .material-precision-bar {
+        height: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .material-precision-bar .progress-bar {
+        transition: width 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .material-precision-bar .progress-bar:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(45deg, 
+            rgba(255,255,255,0) 0%, 
+            rgba(255,255,255,0.2) 25%, 
+            rgba(255,255,255,0.2) 50%, 
+            rgba(255,255,255,0) 100%);
+        animation: shimmer 1.5s infinite;
+        transform: skewX(-45deg);
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) skewX(-45deg); }
+        100% { transform: translateX(100%) skewX(-45deg); }
+    }
+    
+    .material-data-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .material-data-table tr:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+    
+    .material-data-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .material-data-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .material-data-table tr:hover td {
+        transform: translateX(5px);
+    }
+    
+    .material-data-table .text-end {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .samples-table {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .samples-table thead tr {
+        background-color: #f8f9fa;
+    }
+    
+    .samples-table th {
+        padding: 12px;
+        font-weight: 600;
+        color: #2c3e50;
+        border-bottom: 2px solid rgba(0,0,0,0.05);
+    }
+    
+    .samples-table tbody tr {
+        transition: all 0.2s ease;
+    }
+    
+    .samples-table tbody tr:hover {
+        background-color: rgba(52, 152, 219, 0.05);
+    }
+    
+    .samples-table td {
+        padding: 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: all 0.4s ease;
+    }
+    
+    .chart-container:hover {
+        box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        transform: translateY(-3px);
+    }
+
+    /* 材料信息动画效果 */
+    .material-details-fade {
+        animation: fadeInRight 0.5s ease forwards;
+    }
+
+    @keyframes fadeInRight {
+        from {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    /* 自定义确认对话框样式 */
+    .custom-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    .custom-modal-backdrop.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .custom-modal-content {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 450px;
+        transform: scale(0.8) translateY(20px);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+    
+    .custom-modal-backdrop.show .custom-modal-content {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+    
+    .custom-modal-header {
+        padding: 20px 25px;
+        background: linear-gradient(135deg, #2980b9, #3498db);
+        color: white;
+        position: relative;
+    }
+    
+    .custom-modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 80%);
+    }
+    
+    .custom-modal-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        position: relative;
+    }
+    
+    .custom-modal-body {
+        padding: 25px;
+        text-align: center;
+    }
+    
+    .custom-modal-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        display: inline-block;
+        color: #3498db;
+        animation: pulse-icon 1.5s infinite;
+    }
+    
+    @keyframes pulse-icon {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .custom-modal-footer {
+        padding: 15px 25px;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .custom-modal-btn {
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 10px;
+        border: none;
+    }
+    
+    .custom-modal-btn-cancel {
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    
+    .custom-modal-btn-cancel:hover {
+        background-color: #dee2e6;
+    }
+    
+    .custom-modal-btn-confirm {
+        background-color: #3498db;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .custom-modal-btn-confirm::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+    
+    .custom-modal-btn-confirm:hover {
+        background-color: #2980b9;
+    }
+    
+    .custom-modal-btn-confirm:active::after {
+        animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+        0% {
+            transform: scale(0, 0);
+            opacity: 0.5;
+        }
+        100% {
+            transform: scale(20, 20);
+            opacity: 0;
+        }
+    }
+    
+    /* 为模型选择下拉框添加自定义样式 */
+    .model-selection {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .model-selection select {
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        border-radius: 5px;
+    }
+    
+    .model-selection select:hover {
+        border-color: #3498db;
+    }
+
+    /* 美化的提示框样式 */
+    .custom-alert-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1050;
+        backdrop-filter: blur(5px);
+    }
+    
+    .custom-alert-backdrop.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .custom-alert {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 400px;
+        transform: scale(0.8) translateY(-20px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+    
+    .custom-alert-backdrop.show .custom-alert {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+    
+    .custom-alert.error .custom-alert-header {
+        background: linear-gradient(135deg, #dc3545, #e74c3c);
+    }
+    
+    .custom-alert.success .custom-alert-header {
+        background: linear-gradient(135deg, #28a745, #2ecc71);
+    }
+    
+    .custom-alert.info .custom-alert-header {
+        background: linear-gradient(135deg, #17a2b8, #3498db);
+    }
+    
+    .custom-alert-header {
+        padding: 20px 25px;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .custom-alert-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 80%);
+    }
+    
+    .custom-alert-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .custom-alert-header .btn-close {
+        background: none;
+        border: none;
+        color: white;
+        padding: 5px;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: all 0.2s;
+    }
+    
+    .custom-alert-header .btn-close:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    
+    .custom-alert-body {
+        padding: 25px;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+    }
+    
+    .custom-alert-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        display: inline-block;
+        animation: bounce 1s infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .custom-alert-footer {
+        padding: 15px 25px;
+        background: #f8f9fa;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .custom-alert-btn {
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .custom-alert-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+    
+    .custom-alert-btn:active::after {
+        animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+        0% { transform: scale(0, 0); opacity: 0.5; }
+        100% { transform: scale(20, 20); opacity: 0; }
+    }
+    
+    .custom-alert-btn-confirm {
+        background: #007bff;
+        color: white;
+    }
+    
+    .custom-alert-btn-confirm:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    }
+    
+    .custom-alert-btn-cancel {
+        background: #e9ecef;
+        color: #495057;
+    }
+    
+    .custom-alert-btn-cancel:hover {
+        background: #dee2e6;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 上传进度对话框样式 */
+    .upload-progress-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 1050;
+    }
+    
+    .upload-progress-modal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .upload-progress-content {
+        background: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 400px;
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+    }
+    
+    .upload-progress-modal.show .upload-progress-content {
+        transform: translateY(0);
+    }
+    
+    .upload-progress-header {
+        padding: 15px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .upload-progress-body {
+        padding: 20px;
+    }
+    
+    .progress {
+        height: 20px;
+    }
+    
+    /* 文件上传项样式，与训练界面保持一致 */
+    .file-upload-section {
+        padding: 0.5rem 0;
+    }
+    
+    .file-upload-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.02);
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .file-upload-item:hover {
+        background: rgba(52, 152, 219, 0.05);
+        border-color: rgba(52, 152, 219, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    .file-upload-item .form-label {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .file-upload-item .form-label i {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+        color: #3498db;
+        width: 24px;
+        transition: all 0.3s ease;
+    }
+    
+    .file-upload-item:hover .form-label i {
+        transform: scale(1.2);
+        color: #2980b9;
+    }
+    
+    .file-upload-item .form-control {
+        border: 2px dashed rgba(52, 152, 219, 0.3);
+        border-radius: 6px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .file-upload-item .form-control:hover {
+        border-color: rgba(52, 152, 219, 0.5);
+        background: rgba(52, 152, 219, 0.02);
+    }
+    
+    .file-upload-item .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .file-upload-item .text-muted {
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    
+    .file-upload-item:hover .text-muted {
+        color: #2980b9;
+    }
+    
+    .file-upload-item.is-valid .form-control {
+        border-color: #2ecc71;
+        border-style: solid;
+    }
+    
+    .file-upload-item.is-valid .form-label i {
+        color: #2ecc71;
+    }
+    
+    .upload-button {
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+    }
+    
+    .upload-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        background: linear-gradient(135deg, #2980b9, #2573a7);
+    }
+    
+    .upload-button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(52, 152, 219, 0.2);
+    }
+    
+    .upload-button i {
+        transition: all 0.3s ease;
+    }
+    
+    .upload-button:hover i {
+        transform: translateY(-2px);
+    }
+    
+    /* 数据类型选择样式，与训练界面保持一致 */
+    .data-type-options {
+        padding: 0.5rem 0;
+    }
+    
+    .data-type-option {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: rgba(0,0,0,0.02);
+        border: 1px solid transparent;
+    }
+    
+    .data-type-option:hover {
+        background: rgba(52, 152, 219, 0.1);
+        border-color: rgba(52, 152, 219, 0.2);
+        transform: translateX(5px);
+    }
+    
+    .data-type-option .form-check-label {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+    
+    .data-type-option .form-check-input {
+        margin-top: 0.3rem;
+    }
+    
+    .data-type-option .fas {
+        font-size: 1.2rem;
+        width: 25px;
+        color: #3498db;
+        transition: all 0.3s ease;
+    }
+    
+    .data-type-option:hover .fas {
+        transform: scale(1.2);
+        color: #2980b9;
+    }
+    
+    .data-type-option input[type="radio"]:checked + label {
+        color: #2980b9;
+        font-weight: 600;
+    }
+    
+    .data-type-option input[type="radio"]:checked + label .fas {
+        color: #2980b9;
+        transform: scale(1.2);
+    }
+    
+    .data-type-option input[type="radio"]:checked + label + .form-check {
+        background: rgba(52, 152, 219, 0.1);
+        border-color: rgba(52, 152, 219, 0.2);
+    }
+
+    /* 自定义模型选择下拉框样式 */
+    .model-select-container {
+        position: relative;
+        z-index: 5;
+    }
+    
+    .custom-model-select {
+        width: 100%;
+        padding: 12px 15px;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #495057;
+        background-color: rgba(255, 255, 255, 0.9);
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234A6CF7' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 16px 12px;
+        border: 2px solid rgba(74, 108, 247, 0.3);
+        border-radius: 8px;
+        appearance: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(74, 108, 247, 0.1);
+    }
+    
+    .custom-model-select:hover {
+        border-color: rgba(74, 108, 247, 0.6);
+        box-shadow: 0 4px 10px rgba(74, 108, 247, 0.2);
+    }
+    
+    .custom-model-select:focus {
+        outline: none;
+        border-color: #4A6CF7;
+        box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.25);
+        background-color: #fff;
+    }
+    
+    /* 为下拉框添加渐变边框效果 */
+    .custom-model-select {
+        position: relative;
+        border: none;
+        background-clip: padding-box;
+        z-index: 1;
+    }
+    
+    .custom-model-select::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #4A6CF7, #6E8FFE, #4A6CF7);
+        border-radius: 10px;
+        z-index: -1;
+        animation: animatedgradient 3s ease alternate infinite;
+        background-size: 300% 300%;
+    }
+    
+    @keyframes animatedgradient {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+    
+    /* 下拉选项样式 */
+    .custom-model-select option {
+        padding: 12px;
+        background-color: #fff;
+        color: #495057;
+    }
+    
+    .custom-model-select option:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* 模型选择下拉框样式 */
+    .model-select-container {
+        position: relative;
+        width: 100%;
+    }
+
+    .custom-model-select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        padding: 12px 18px;
+        font-size: 16px;
+        color: #444;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'%3E%3C/path%3E%3C/svg%3E") no-repeat right 15px center;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .custom-model-select:hover {
+        border-color: #4299e1;
+        box-shadow: 0 2px 6px rgba(66, 153, 225, 0.2);
+    }
+    
+    .custom-model-select:focus {
+        border-color: #3182ce;
+        box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.3);
+        outline: none;
+    }
+    
+    .custom-model-select option {
+        padding: 10px;
+        background-color: #fff;
+        color: #333;
+    }
+    
+    .custom-model-select option:hover {
+        background-color: #f7fafc;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        display: block;
+    }
+    
+    /* 添加渐变边框动画效果 */
+    .custom-model-select:focus {
+        border: 2px solid transparent;
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+        background-image: 
+            linear-gradient(white, white), 
+            linear-gradient(90deg, #3182ce, #63b3ed, #4299e1);
+        animation: gradient 3s ease infinite;
+        background-size: 200% 200%;
+    }
+    
+    @keyframes gradient {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+    
+    /* 表单组样式加强 */
+    .form-group-enhanced {
+        margin-bottom: 20px;
+        background: linear-gradient(145deg, #ffffff, #f0f4f8);
+        padding: 22px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .form-group-enhanced:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 新增：寿命单位提示样式 */
+    .unit-badge {
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background-color: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+        margin-left: 5px;
+        border: 1px solid rgba(52, 152, 219, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="particles-background" id="particles-js"></div>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h2 class="my-2"><i class="fas fa-chart-line me-2"></i>疲劳寿命预测</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class=""></i>
+                        <strong>寿命预测过程说明：</strong> 在此页面可以上传金属疲劳数据，选择已训练的模型，进行批量疲劳寿命预测。系统将处理数据并可视化预测结果。
+                    </div>
+                    
+                    <ul class="nav nav-tabs mb-4" id="predictionTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="predict-setup-tab" data-bs-toggle="tab" data-bs-target="#predict-setup" type="button" role="tab" aria-controls="predict-setup" aria-selected="true">
+                                <i class="fas fa-cog me-1"></i>预测设置
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="predict-results-tab" data-bs-toggle="tab" data-bs-target="#predict-results" type="button" role="tab" aria-controls="predict-results" aria-selected="false">
+                                <i class="fas fa-poll me-1"></i>预测结果
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="predict-materials-tab" data-bs-toggle="tab" data-bs-target="#predict-materials" type="button" role="tab" aria-controls="predict-materials" aria-selected="false">
+                                <i class="fas fa-microscope me-1"></i>材料分析
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="predictionTabsContent">
+                        <!-- 预测设置选项卡 -->
+                        <div class="tab-pane fade show active" id="predict-setup" role="tabpanel" aria-labelledby="predict-setup-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0"><i class="fas fa-upload me-2"></i>上传预测数据</h5>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <form id="uploadPredictionDataForm" action="{{ url_for('upload_dataset') }}" method="post" enctype="multipart/form-data" class="h-100 d-flex flex-column">
+                                                <div class="file-upload-section flex-grow-1">
+                                                    <div class="file-upload-item">
+                                                        <label for="strain_data" class="form-label">
+                                                            <i class="fas fa-file-archive"></i>
+                                                            应变控制数据文件夹 (ZIP)
+                                                        </label>
+                                                        <input type="file" class="form-control" id="strain_data" name="strain_data" accept=".zip">
+                                                        <small class="text-muted">包含所有应变控制的时序CSV文件的压缩包</small>
+                                                        <div class="invalid-feedback" id="strain_data_feedback">
+                                                            请选择应变控制数据文件
+                                                        </div>
+                                                    </div>
+                                                    <div class="file-upload-item">
+                                                        <label for="strain_summary" class="form-label">
+                                                            <i class="fas fa-file-csv"></i>
+                                                            应变控制汇总文件 (CSV)
+                                                        </label>
+                                                        <input type="file" class="form-control" id="strain_summary" name="strain_summary" accept=".csv">
+                                                        <small class="text-muted">包含材料属性和寿命的汇总CSV文件</small>
+                                                        <div class="invalid-feedback" id="strain_summary_feedback">
+                                                            请选择应变控制汇总文件
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-auto">
+                                                    <button type="submit" class="btn upload-button w-100" id="uploadButton">
+                                                        <i class="fas fa-cloud-upload-alt me-2"></i>上传数据集
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-secondary text-white">
+                                            <h5 class="mb-0"><i class="fas fa-brain me-2"></i>选择预测模型</h5>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="flex-grow-1">
+                                                <label class="form-label fs-5 mb-3">选择数据类型</label>
+                                                <div class="data-type-options">
+                                                    <div class="form-check data-type-option mb-3">
+                                                        <input class="form-check-input" type="radio" name="predict_data_type" id="predict_data_type_strain" value="strain" checked>
+                                                        <label class="form-check-label" for="predict_data_type_strain">
+                                                            <i class="fas fa-layer-group me-2"></i>应变控制数据
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check data-type-option mb-3">
+                                                        <input class="form-check-input" type="radio" name="predict_data_type" id="predict_data_type_stress" value="stress">
+                                                        <label class="form-check-label" for="predict_data_type_stress">
+                                                            <i class="fas fa-compress me-2"></i>应力控制数据
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mb-3 mt-4">
+                                                    <label for="model_selection" class="form-label">选择预测模型</label>
+                                                    <div class="model-select-container">
+                                                        <select class="custom-model-select" id="model_selection" name="model_path">
+                                                            {% if models %}
+                                                                {% for model in models %}
+                                                                    <option value="{{ model.path }}">{{ model.display_name }}</option>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <option value="" disabled>没有可用的模型</option>
+                                                            {% endif %}
+                                                        </select>
+                                                    </div>
+                                                    <small class="text-muted mt-2 d-block">请选择已训练好的模型用于疲劳寿命预测</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-auto">
+                                                <button id="startPredictionBtn" class="btn upload-button w-100" {% if not models %}disabled{% endif %}>
+                                                    <i class="fas fa-play-circle me-2"></i>开始预测
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 预测结果选项卡 -->
+                        <div class="tab-pane fade" id="predict-results" role="tabpanel" aria-labelledby="predict-results-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="alert alert-warning mb-4" id="prediction-status-alert">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i id="prediction-spinner" class="fas fa-spinner fa-spin me-2"></i>
+                                                <span class="prediction-status" id="prediction-status-message">正在准备数据...</span>
+                                            </div>
+                                            <div>
+                                                <button id="export-excel-btn" class="btn btn-sm btn-success me-2" style="display: none;">
+                                                    <i class="fas fa-file-excel me-1"></i>导出Excel
+                                                </button>
+                                                <button id="refresh-prediction-btn" class="btn btn-sm btn-outline-dark">
+                                                    <i class="fas fa-sync-alt me-1"></i>刷新
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row" id="prediction-metrics" style="display: none;">
+                                        <div class="col-md-3 mb-4">
+                                            <div class="card bg-light metrics-card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="text-muted">均方误差 (MSE)</h6>
+                                                    <h3 id="metric-mse">{{ "%.6f"|format(prediction_stats.results.mse) if prediction_stats.results else '-' }}</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-4">
+                                            <div class="card bg-light metrics-card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="text-muted">平均绝对误差 (MAE)</h6>
+                                                    <h3 id="metric-mae">{{ "%.6f"|format(prediction_stats.results.mae) if prediction_stats.results else '-' }}</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-4">
+                                            <div class="card bg-light metrics-card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="text-muted">决定系数 (R²)</h6>
+                                                    <h3 id="metric-r2">{{ "%.6f"|format(prediction_stats.results.r2) if prediction_stats.results else '-' }}</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3 mb-4">
+                                            <div class="card bg-light metrics-card">
+                                                <div class="card-body text-center">
+                                                    <h6 class="text-muted">均方根误差 (RMSE)</h6>
+                                                    <h3 id="metric-rmse">{{ "%.6f"|format(prediction_stats.results.rmse) if prediction_stats.results else '-' }}</h3>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="card">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0"><i class="fas fa-chart-scatter me-2"></i>预测结果可视化</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div id="scatter-chart" class="chart-container"></div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div id="residual-chart" class="chart-container"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 材料分析选项卡 -->
+                        <div class="tab-pane fade" id="predict-materials" role="tabpanel" aria-labelledby="predict-materials-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="alert alert-info mb-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <span>不同材料的预测结果分析，展示各材料的疲劳寿命预测精度和性能指标对比。</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>材料对比分析</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="chart-container" id="material-comparison-chart"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="card shadow material-analysis-card">
+                                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0"><i class="fas fa-microscope me-2"></i>材料详细分析</h5>
+                                            <div class="select-container">
+                                                <select id="material-selector" class="form-select-sm">
+                                                    <option value="">选择材料...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="no-materials-message" class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                尚无材料分析数据，请完成预测后查看。
+                                            </div>
+                                            <div id="material-details-container" class="d-none">
+                                                <!-- 这里会通过JavaScript动态填充所选材料的详细信息 -->
+                                            </div>
+                                            <div id="materials-container" class="row d-none">
+                                                <!-- 这里原来是用来放所有材料卡片的地方，现在我们使用下拉框选择 -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 存储预测数据，供JavaScript使用 -->
+<div id="prediction-data" 
+     data-is-predicting="{{ 'true' if prediction_stats.is_predicting else 'false' }}"
+     data-has-results="{{ 'true' if prediction_stats.results else 'false' }}"
+     data-has-materials="{{ 'true' if prediction_stats.material_stats else 'false' }}"
+     style="display: none;">
+</div>
+
+<!-- 自定义确认对话框 -->
+<div class="custom-modal-backdrop" id="confirmPredictionModal">
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5><i class="fas fa-chart-line me-2"></i>确认预测操作</h5>
+        </div>
+        <div class="custom-modal-body">
+            <div class="custom-modal-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <p class="mb-1">您确定要开始模型预测吗？</p>
+            <p class="text-muted small">系统将使用所选模型对上传的数据进行疲劳寿命预测分析</p>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="custom-modal-btn custom-modal-btn-cancel" id="cancelPredictionBtn">
+                <i class="fas fa-times me-1"></i>取消
+            </button>
+            <button type="button" class="custom-modal-btn custom-modal-btn-confirm" id="confirmPredictionBtn">
+                <i class="fas fa-check me-1"></i>确认预测
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{url_for('static', filename='js/particles.min.js')}}"></script>
+<script src="{{url_for('static', filename='js/xlsx.full.min.js')}}"></script>
+
+<script>
+    // 初始化粒子背景
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof particlesJS !== 'undefined') {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#4A6CF7"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": false,
+                        "anim": {
+                            "enable": false,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": false,
+                            "speed": 40,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#4A6CF7",
+                        "opacity": 0.2,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 2,
+                        "direction": "none",
+                        "random": false,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": false,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+        }
+    });
+
+    $(document).ready(function() {
+        // 初始化图表
+        var scatterChart = echarts.init(document.getElementById('scatter-chart'));
+        var residualChart = echarts.init(document.getElementById('residual-chart'));
+        var materialComparisonChart = echarts.init(document.getElementById('material-comparison-chart'));
+        
+        // 获取预测数据
+        var predictionData = document.getElementById('prediction-data');
+        var isPredicting = predictionData && predictionData.dataset.isPredicting === 'true';
+        var hasResults = predictionData && predictionData.dataset.hasResults === 'true';
+        var hasMaterials = predictionData && predictionData.dataset.hasMaterials === 'true';
+        
+        // 对数转换为循环次数的函数
+        function logToCycles(logValue) {
+            return Math.pow(10, logValue);
+        }
+        
+        // 格式化大数字的函数（超过1000的数字使用科学计数法）
+        function formatCycles(cycles) {
+            if (cycles < 1000) {
+                return cycles.toFixed(0);
+            } else {
+                return cycles.toExponential(2);
+            }
+        }
+        
+        // 如果有结果，显示结果面板
+        if (hasResults) {
+            $("#prediction-metrics").show();
+        }
+        
+        // 如果正在预测，显示加载动画
+        if (isPredicting) {
+            $("#prediction-spinner").show();
+        }
+        
+        // 散点图配置
+        var scatterOption = {
+            title: {
+                text: '预测值与实际值对比',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params) {
+                    // 转换对数值为循环次数
+                    var actualCycles = logToCycles(params.value[0]);
+                    var predictedCycles = logToCycles(params.value[1]);
+                    return '实际值: ' + params.value[0].toFixed(4) + ' (对数)<br/>' +
+                           '实际循环: ' + formatCycles(actualCycles) + ' cycles<br/>' +
+                           '预测值: ' + params.value[1].toFixed(4) + ' (对数)<br/>' +
+                           '预测循环: ' + formatCycles(predictedCycles) + ' cycles';
+                }
+            },
+            grid: {
+                left: '5%',
+                right: '5%',
+                bottom: '10%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                name: '实际疲劳寿命 (log)',
+                nameLocation: 'middle',
+                nameGap: 30
+            },
+            yAxis: {
+                type: 'value',
+                name: '预测疲劳寿命 (log)',
+                nameLocation: 'middle',
+                nameGap: 30
+            },
+            series: [
+                {
+                    type: 'scatter',
+                    symbolSize: 10,
+                    data: [],
+                    itemStyle: {
+                        color: '#3498db'
+                    }
+                },
+                {
+                    type: 'line',
+                    showSymbol: false,
+                    data: [],
+                    lineStyle: {
+                        color: '#e74c3c',
+                        width: 2,
+                        type: 'dashed'
+                    }
+                }
+            ]
+        };
+        
+        // 残差图配置
+        var residualOption = {
+            title: {
+                text: '预测残差分析',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: function(params) {
+                    // 转换对数值为循环次数
+                    var actualCycles = logToCycles(params.value[0]);
+                    var residualLog = params.value[1];
+                    // 计算实际循环次数的差异
+                    var predictedLog = params.value[0] + residualLog;
+                    var predictedCycles = logToCycles(predictedLog);
+                    var cyclesDifference = predictedCycles - actualCycles;
+                    
+                    return '实际值: ' + params.value[0].toFixed(4) + ' (对数)<br/>' +
+                           '实际循环: ' + formatCycles(actualCycles) + ' cycles<br/>' +
+                           '残差(对数): ' + residualLog.toFixed(4) + '<br/>' +
+                           '循环差异: ' + formatCycles(Math.abs(cyclesDifference)) + ' cycles';
+                }
+            },
+            grid: {
+                left: '5%',
+                right: '5%',
+                bottom: '10%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                name: '实际疲劳寿命 (log)',
+                nameLocation: 'middle',
+                nameGap: 30
+            },
+            yAxis: {
+                type: 'value',
+                name: '残差 (预测值 - 实际值)',
+                nameLocation: 'middle',
+                nameGap: 30
+            },
+            series: [
+                {
+                    type: 'scatter',
+                    symbolSize: 10,
+                    data: [],
+                    itemStyle: {
+                        color: '#3498db'
+                    }
+                },
+                {
+                    type: 'line',
+                    showSymbol: false,
+                    data: [],
+                    lineStyle: {
+                        color: '#2ecc71',
+                        width: 2,
+                        type: 'dashed'
+                    }
+                }
+            ]
+        };
+        
+        // 材料对比图配置
+        var materialComparisonOption = {
+            title: {
+                text: '不同材料疲劳寿命预测对比',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter: function(params) {
+                    // 转换对数值为循环次数
+                    var material = params[0].name;
+                    var result = material + '<br/>';
+                    
+                    params.forEach(function(param) {
+                        var logValue = parseFloat(param.value);
+                        var cycles = logToCycles(logValue);
+                        result += param.seriesName + ': ' + logValue.toFixed(4) + ' (对数)<br/>';
+                        result += param.seriesName + '循环: ' + formatCycles(cycles) + ' cycles<br/>';
+                    });
+                    
+                    return result;
+                }
+            },
+            legend: {
+                data: ['实际值', '预测值'],
+                bottom: '0%'
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '15%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: [],
+                axisLabel: {
+                    interval: 0,
+                    rotate: 45
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: '平均疲劳寿命 (log)',
+                nameLocation: 'middle',
+                nameGap: 40
+            },
+            series: [
+                {
+                    name: '实际值',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: '#3498db'
+                    }
+                },
+                {
+                    name: '预测值',
+                    type: 'bar',
+                    data: [],
+                    itemStyle: {
+                        color: '#e67e22'
+                    }
+                }
+            ]
+        };
+        
+        // 设置图表
+        scatterChart.setOption(scatterOption);
+        residualChart.setOption(residualOption);
+        materialComparisonChart.setOption(materialComparisonOption);
+        
+        // 当窗口大小改变时，重置图表大小
+        window.addEventListener('resize', function() {
+            scatterChart.resize();
+            residualChart.resize();
+            materialComparisonChart.resize();
+        });
+        
+        // 自定义确认对话框管理
+        function showCustomConfirm(modalId, confirmCallback) {
+            const modal = document.getElementById(modalId);
+            $(modal).addClass('show');
+            
+            // 事件绑定
+            $(modal).find('.custom-modal-btn-cancel').one('click', function() {
+                $(modal).removeClass('show');
+            });
+            
+            $(modal).find('.custom-modal-btn-confirm').one('click', function() {
+                $(modal).removeClass('show');
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+            });
+        }
+        
+        // 开始预测按钮点击事件
+        $("#startPredictionBtn").click(function() {
+            showCustomConfirm('confirmPredictionModal', function() {
+                // 收集参数
+                var data = {
+                    data_type: $("input[name='predict_data_type']:checked").val(),
+                    model_path: $("#model_selection").val()
+                };
+                
+                // 发送请求
+                $.ajax({
+                    url: "{{ url_for('start_prediction') }}",
+                    type: "POST",
+                    data: data,
+                    success: function(response) {
+                        if (response.status === "success") {
+                            // 切换到预测结果选项卡
+                            $("#predict-results-tab").tab("show");
+                            // 开始更新预测状态
+                            startStatusUpdates();
+                        } else {
+                            // 使用Toast通知代替alert
+                            showToast("错误", response.message, "error");
+                        }
+                    },
+                    error: function() {
+                        showToast("错误", "发送请求时发生错误，请重试。", "error");
+                    }
+                });
+            });
+        });
+        
+        // Toast通知系统
+        function showToast(title, message, type) {
+            // 如果页面中没有toast容器，则创建一个
+            if ($('#toast-container').length === 0) {
+                $('body').append('<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 1060;"></div>');
+            }
+            
+            // 设置颜色样式
+            let bgColor = 'bg-primary';
+            let icon = 'info-circle';
+            
+            if (type === 'error') {
+                bgColor = 'bg-danger';
+                icon = 'exclamation-circle';
+            } else if (type === 'success') {
+                bgColor = 'bg-success';
+                icon = 'check-circle';
+            } else if (type === 'warning') {
+                bgColor = 'bg-warning';
+                icon = 'exclamation-triangle';
+            }
+            
+            // 创建toast元素
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000" 
+                     style="min-width: 300px; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease;">
+                    <div class="toast-header ${bgColor} text-white">
+                        <i class="fas fa-${icon} me-2"></i>
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            // 添加到容器并显示
+            $('#toast-container').append(toastHtml);
+            const toastElement = document.getElementById(toastId);
+            
+            // 应用动画
+            setTimeout(() => {
+                $(toastElement).css({
+                    'opacity': '1',
+                    'transform': 'translateY(0)'
+                });
+            }, 50);
+            
+            // 设置自动关闭
+            setTimeout(() => {
+                $(toastElement).css({
+                    'opacity': '0',
+                    'transform': 'translateY(-20px)'
+                });
+                
+                setTimeout(() => {
+                    $(toastElement).remove();
+                }, 300);
+            }, 4000);
+        }
+        
+        // 定期更新预测状态
+        function startStatusUpdates() {
+            // 显示预测中的提示
+            $("#prediction-spinner").show();
+            $("#prediction-status-alert").removeClass("alert-success").addClass("alert-warning");
+            
+            // 立即获取一次状态
+            updatePredictionStatus();
+            
+            // 每秒更新一次
+            var statusInterval = setInterval(function() {
+                updatePredictionStatus(function(data) {
+                    if (!data.is_predicting) {
+                        // 预测结束，停止更新
+                        clearInterval(statusInterval);
+                        $("#prediction-spinner").hide();
+                        $("#prediction-status-alert").removeClass("alert-warning").addClass("alert-success");
+                        
+                        // 显示成功通知
+                        showToast("预测完成", "模型预测已成功完成，您可以查看结果分析。", "success");
+                    }
+                });
+            }, 1000);
+        }
+        
+        // 更新预测状态
+        function updatePredictionStatus(callback) {
+            $.ajax({
+                url: "{{ url_for('prediction_status') }}",
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    // 更新状态文本
+                    $("#prediction-status-message").text(data.status);
+                    
+                    // 如果有预测结果，则显示
+                    if (data.results) {
+                        $("#prediction-metrics").show();
+                        
+                        // 更新指标
+                        $("#metric-mse").text(data.results.mse.toFixed(6));
+                        $("#metric-mae").text(data.results.mae.toFixed(6));
+                        $("#metric-r2").text(data.results.r2.toFixed(6));
+                        $("#metric-rmse").text(data.results.rmse.toFixed(6));
+                        
+                        // 更新散点图和残差图
+                        updatePredictionCharts(data.results.targets, data.results.predictions);
+                        
+                        // 更新材料对比图和材料分析
+                        if (data.material_stats) {
+                            updateMaterialAnalysis(data.material_stats);
+                        }
+                    }
+                    
+                    // 检查预测是否完成
+                    if (!data.is_predicting) {
+                        // 确保加载动画停止
+                        $("#prediction-spinner").hide();
+                        $("#prediction-status-alert").removeClass("alert-warning").addClass("alert-success");
+                        
+                        // 如果有预测结果，显示导出按钮
+                        if (data.results && data.results.targets && data.results.predictions) {
+                            $("#export-excel-btn").show();
+                        }
+                        
+                        // 显示成功通知
+                        showToast("预测完成", "模型预测已成功完成，您可以查看结果分析。", "success");
+                    }
+                    
+                    // 如果提供了回调，就调用它
+                    if (callback) {
+                        callback(data);
+                    }
+                },
+                error: function() {
+                    console.error("获取预测状态时发生错误");
+                }
+            });
+        }
+        
+        // 更新预测图表
+        function updatePredictionCharts(targets, predictions) {
+            // 检查数据是否存在
+            if (!targets || !predictions) {
+                console.warn("预测数据不完整，无法更新图表");
+                return;
+            }
+            
+            // 确保数据是数组
+            if (!Array.isArray(targets) || !Array.isArray(predictions)) {
+                console.warn("预测数据格式不正确，targets和predictions应该是数组");
+                return;
+            }
+            
+            // 检查数组是否为空
+            if (targets.length === 0 || predictions.length === 0) {
+                console.warn("预测数据为空，无法更新图表");
+                return;
+            }
+            
+            // 准备数据
+            var scatterData = [];
+            var residualData = [];
+            
+            // 找到最小值和最大值，用于绘制对角线
+            var minVal = Math.min(...targets);
+            var maxVal = Math.max(...targets);
+            
+            for (var i = 0; i < targets.length; i++) {
+                scatterData.push([targets[i], predictions[i]]);
+                residualData.push([targets[i], predictions[i] - targets[i]]);
+            }
+            
+            // 更新散点图
+            scatterOption.series[0].data = scatterData;
+            scatterOption.series[1].data = [[minVal, minVal], [maxVal, maxVal]];
+            scatterChart.setOption(scatterOption);
+            
+            // 更新残差图
+            residualOption.series[0].data = residualData;
+            residualOption.series[1].data = [[minVal, 0], [maxVal, 0]];
+            residualChart.setOption(residualOption);
+        }
+        
+        // 更新材料分析
+        function updateMaterialAnalysis(materialStats) {
+            // 隐藏无材料提示
+            $("#no-materials-message").hide();
+            $("#materials-container").addClass("d-none");
+            $("#material-details-container").removeClass("d-none");
+            
+            // 清空材料选择器并添加材料选项
+            var materialSelector = $("#material-selector");
+            materialSelector.empty();
+            materialSelector.append('<option value="">选择材料...</option>');
+            
+            // 准备材料对比图数据
+            var materialNames = [];
+            var actualValues = [];
+            var predictedValues = [];
+            
+            // 按名称排序的材料列表
+            var sortedMaterials = Object.keys(materialStats).sort();
+            
+            // 遍历材料统计数据
+            for (var material of sortedMaterials) {
+                var stats = materialStats[material];
+                
+                // 检查targets和predictions是否存在
+                if (!stats.targets || !stats.predictions) {
+                    console.warn(`材料 ${material} 缺少targets或predictions数据`);
+                    // 使用默认值
+                    var avgTarget = stats.mse || 0;
+                    var avgPrediction = stats.mae || 0;
+                } else {
+                    // 计算平均值
+                    var avgTarget = stats.targets.reduce((a, b) => a + b, 0) / stats.targets.length;
+                    var avgPrediction = stats.predictions.reduce((a, b) => a + b, 0) / stats.predictions.length;
+                }
+                
+                // 添加到图表数据
+                materialNames.push(material);
+                actualValues.push(avgTarget.toFixed(4));
+                predictedValues.push(avgPrediction.toFixed(4));
+                
+                // 添加到下拉选择器
+                materialSelector.append(`<option value="${material}" data-sample-count="${stats.sample_count || stats.count || 0}">${material}</option>`);
+            }
+            
+            // 更新材料对比图
+            materialComparisonOption.xAxis.data = materialNames;
+            materialComparisonOption.series[0].data = actualValues;
+            materialComparisonOption.series[1].data = predictedValues;
+            materialComparisonChart.setOption(materialComparisonOption, true);
+            
+            // 添加选择器特效
+            if (sortedMaterials.length > 0) {
+                // 添加闪烁动画效果
+                $(".select-container").append('<span class="material-select-hint">请选择材料</span>');
+                $(".material-select-hint").css({
+                    'position': 'absolute',
+                    'right': '50px',
+                    'top': '50%',
+                    'transform': 'translateY(-50%)',
+                    'color': 'rgba(255,255,255,0.7)',
+                    'font-size': '0.85rem',
+                    'pointer-events': 'none',
+                    'opacity': '0',
+                    'animation': 'pulse 2s infinite'
+                });
+                
+                // 添加脉冲动画
+                $("<style>")
+                    .prop("type", "text/css")
+                    .html(`
+                    @keyframes pulse {
+                        0% { opacity: 0.4; }
+                        50% { opacity: 1; }
+                        100% { opacity: 0.4; }
+                    }
+                    `)
+                    .appendTo("head");
+                
+                setTimeout(function() {
+                    $(".material-select-hint").css("opacity", "1");
+                }, 500);
+            }
+            
+            // 监听材料选择器变化
+            materialSelector.off('change').on('change', function() {
+                $(".material-select-hint").fadeOut(300);
+                
+                var selectedMaterial = $(this).val();
+                if (!selectedMaterial) {
+                    $("#material-details-container").html('<div class="alert alert-info">请从下拉菜单中选择一个材料查看详情</div>');
+                    return;
+                }
+                
+                // 添加渐入动画效果
+                $("#material-details-container").css("opacity", 0);
+                
+                // 添加加载动画
+                $("#material-details-container").html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">加载中...</span></div><p class="mt-3 text-muted">正在分析材料数据...</p></div>').css("opacity", 1);
+                
+                // 模拟加载延迟以展示动画效果
+                setTimeout(function() {
+                    renderMaterialDetails(selectedMaterial, materialStats[selectedMaterial]);
+                    $("#material-details-container").addClass("material-details-fade");
+                }, 600);
+            });
+            
+            // 默认显示提示选择材料的信息
+            $("#material-details-container").html('<div class="alert alert-info">请从下拉菜单中选择一个材料查看详情</div>');
+            
+            // 为选择器添加动画效果
+            $(".select-container select").on("mousedown", function() {
+                $(this).addClass("active");
+            }).on("change blur", function() {
+                $(this).removeClass("active");
+            });
+        }
+        
+        // 渲染所选材料的详细信息
+        function renderMaterialDetails(materialName, stats) {
+            // 检查targets和predictions是否存在
+            if (!stats.targets || !stats.predictions) {
+                var avgTarget = stats.mse || 0;
+                var avgPrediction = stats.mae || 0;
+            } else {
+                var avgTarget = stats.targets.reduce((a, b) => a + b, 0) / stats.targets.length;
+                var avgPrediction = stats.predictions.reduce((a, b) => a + b, 0) / stats.predictions.length;
+            }
+            
+            // 计算预测准确度百分比
+            var accuracyPercent = 100;
+            if (avgTarget > 0) {
+                var ratio = avgPrediction / avgTarget;
+                accuracyPercent = Math.min(100, Math.max(0, (1 - Math.abs(ratio - 1)) * 100));
+            }
+            
+            // 计算RMSE和R²（如果后端没有提供）
+            var rmse = stats.rmse;
+            var r2 = stats.r2;
+            
+            // 如果RMSE未提供但有MSE，则计算RMSE
+            if (rmse === undefined && stats.mse !== undefined) {
+                rmse = Math.sqrt(stats.mse);
+            }
+            
+            // 如果R²未提供但有targets和predictions，则计算R²
+            if (r2 === undefined && stats.targets && stats.predictions && stats.targets.length > 0) {
+                // 计算平均值
+                var mean = stats.targets.reduce((a, b) => a + b, 0) / stats.targets.length;
+                
+                // 计算总平方和（TSS）
+                var tss = stats.targets.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0);
+                
+                // 计算残差平方和（RSS）
+                var rss = 0;
+                for (var i = 0; i < stats.targets.length; i++) {
+                    rss += Math.pow(stats.targets[i] - stats.predictions[i], 2);
+                }
+                
+                // 计算R²
+                r2 = (tss > 0) ? 1 - (rss / tss) : 0;
+            }
+            
+            // 确定精度颜色
+            var accuracyColor = '#e74c3c'; // 红色（低精度）
+            if (accuracyPercent > 90) {
+                accuracyColor = '#2ecc71'; // 绿色（高精度）
+            } else if (accuracyPercent > 75) {
+                accuracyColor = '#f39c12'; // 橙色（中等精度）
+            }
+            
+            // 确定精度状态文本
+            var accuracyStatus = '低';
+            var accuracyBadgeClass = 'bg-danger';
+            if (accuracyPercent > 90) {
+                accuracyStatus = '高';
+                accuracyBadgeClass = 'bg-success';
+            } else if (accuracyPercent > 75) {
+                accuracyStatus = '中';
+                accuracyBadgeClass = 'bg-warning text-dark';
+            }
+            
+            // 将对数值转换为循环次数
+            var avgTargetCycles = logToCycles(avgTarget);
+            var avgPredictionCycles = logToCycles(avgPrediction);
+            
+            // 创建详细信息HTML
+            var detailsHtml = `
+                <div class="card shadow-sm material-analysis-card">
+                    <div class="card-header bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="fas fa-microscope me-2"></i>${materialName} - 详细分析
+                            </h5>
+                            <span class="badge ${accuracyBadgeClass}">
+                                <i class="fas fa-${accuracyPercent > 90 ? 'check-circle' : accuracyPercent > 75 ? 'exclamation-circle' : 'times-circle'} me-1"></i>
+                                ${accuracyStatus}精度
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3 material-info-section">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>基本信息
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="fw-bold">样本数量:</span>
+                                            <span class="badge bg-primary" style="font-size: 1rem;">${stats.sample_count || stats.count || 0}</span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span class="fw-bold">预测精度</span>
+                                                <span>${accuracyPercent.toFixed(1)}%</span>
+                                            </div>
+                                            <div class="progress material-precision-bar">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: ${accuracyPercent.toFixed(1)}%; background-color: ${accuracyColor};" 
+                                                     aria-valuenow="${accuracyPercent.toFixed(1)}" aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <table class="table table-sm material-data-table">
+                                            <tr>
+                                                <td><i class="fas fa-bullseye me-1 text-primary"></i> 平均实际寿命</td>
+                                                <td class="text-end">
+                                                    ${avgTarget.toFixed(4)}
+                                                    <span class="unit-badge">对数值</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fas fa-bullseye me-1 text-success"></i> 实际循环次数</td>
+                                                <td class="text-end">
+                                                    ${formatCycles(avgTargetCycles)}
+                                                    <span class="unit-badge">cycles</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fas fa-calculator me-1 text-primary"></i> 平均预测寿命</td>
+                                                <td class="text-end">
+                                                    ${avgPrediction.toFixed(4)}
+                                                    <span class="unit-badge">对数值</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fas fa-calculator me-1 text-success"></i> 预测循环次数</td>
+                                                <td class="text-end">
+                                                    ${formatCycles(avgPredictionCycles)}
+                                                    <span class="unit-badge">cycles</span>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card material-info-section">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-chart-line me-2"></i>预测性能指标
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm material-data-table">
+                                            <tr>
+                                                <td><i class="fas fa-square me-1 text-info"></i> 均方误差 (MSE)</td>
+                                                <td class="text-end">${(stats.mse || 0).toFixed(6)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fas fa-arrows-alt-h me-1 text-warning"></i> 平均绝对误差 (MAE)</td>
+                                                <td class="text-end">${(stats.mae || 0).toFixed(6)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fas fa-square-root-alt me-1 text-danger"></i> 均方根误差 (RMSE)</td>
+                                                <td class="text-end">${(rmse || 0).toFixed(6)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fas fa-check-square me-1 text-success"></i> 决定系数 (R²)</td>
+                                                <td class="text-end">${(r2 || 0).toFixed(6)}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card material-info-section">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-table me-2"></i>样本预测详情
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped table-hover samples-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>实际寿命(log)</th>
+                                                        <th>实际循环数</th>
+                                                        <th>预测寿命(log)</th>
+                                                        <th>预测循环数</th>
+                                                        <th>误差(log)</th>
+                                                        <th>相对误差(%)</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${generateSampleRows(stats)}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 更新材料详情容器
+            $("#material-details-container").html(detailsHtml);
+            
+            // 添加进场动画
+            $(".material-info-section").each(function(index) {
+                $(this).css({
+                    'opacity': '0',
+                    'transform': 'translateY(20px)'
+                });
+                
+                setTimeout(() => {
+                    $(this).css({
+                        'transition': 'all 0.5s ease',
+                        'opacity': '1',
+                        'transform': 'translateY(0)'
+                    });
+                }, 100 * (index + 1));
+            });
+            
+            // 添加进度条动画
+            setTimeout(() => {
+                $(".material-precision-bar .progress-bar").css("width", `${accuracyPercent.toFixed(1)}%`);
+            }, 300);
+        }
+        
+        // 生成样本行
+        function generateSampleRows(stats) {
+            if (!stats.targets || !stats.predictions || stats.targets.length === 0) {
+                return '<tr><td colspan="7" class="text-center">无样本数据</td></tr>';
+            }
+            
+            let rowsHtml = '';
+            const maxRows = Math.min(stats.targets.length, 10); // 限制显示最多10行
+            
+            for (let i = 0; i < maxRows; i++) {
+                const target = stats.targets[i];
+                const prediction = stats.predictions[i];
+                const error = prediction - target;
+                const relativeError = target !== 0 ? (error / Math.abs(target)) * 100 : 0;
+                const errorClass = Math.abs(relativeError) > 10 ? 'text-danger' : 
+                                  Math.abs(relativeError) > 5 ? 'text-warning' : 'text-success';
+                
+                // 转换为循环次数
+                const targetCycles = logToCycles(target);
+                const predictionCycles = logToCycles(prediction);
+                
+                rowsHtml += `
+                    <tr>
+                        <td>${i + 1}</td>
+                        <td>${target.toFixed(4)}</td>
+                        <td>${formatCycles(targetCycles)}</td>
+                        <td>${prediction.toFixed(4)}</td>
+                        <td>${formatCycles(predictionCycles)}</td>
+                        <td>${error.toFixed(4)}</td>
+                        <td class="${errorClass}">${relativeError.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }
+            
+            if (stats.targets.length > maxRows) {
+                rowsHtml += `<tr><td colspan="7" class="text-center">显示 ${maxRows}/${stats.targets.length} 个样本...</td></tr>`;
+            }
+            
+            return rowsHtml;
+        }
+        
+        // 刷新按钮点击事件
+        $("#refresh-prediction-btn").click(function() {
+            updatePredictionStatus();
+        });
+        
+        // 如果页面加载时已有预测结果，则加载图表
+        if (hasResults) {
+            // 从服务器获取最新状态以更新图表
+            updatePredictionStatus();
+        }
+        
+        // 如果正在预测中，开始更新状态
+        if (isPredicting) {
+            startStatusUpdates();
+        }
+
+        // 文件上传表单验证
+        $('#uploadPredictionDataForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取文件输入
+            const strainData = $('#strain_data')[0].files[0];
+            const strainSummary = $('#strain_summary')[0].files[0];
+            
+            // 重置所有验证状态
+            $('#strain_data, #strain_summary').removeClass('is-invalid');
+            
+            // 验证文件是否选择
+            let isValid = true;
+            let errorMessage = '';
+            
+            if (!strainData) {
+                $('#strain_data').addClass('is-invalid');
+                errorMessage += '请选择应变控制数据文件\n';
+                isValid = false;
+            }
+            
+            if (!strainSummary) {
+                $('#strain_summary').addClass('is-invalid');
+                errorMessage += '请选择应变控制汇总文件\n';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                // 使用自定义提示框显示错误
+                showCustomAlert('上传错误', errorMessage, 'error');
+                return false;
+            }
+            
+            // 显示上传进度对话框
+            showUploadProgress();
+            
+            // 准备表单数据
+            const formData = new FormData(this);
+            
+            // 使用Ajax提交表单
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // 隐藏上传进度对话框
+                    $('.upload-progress-modal').removeClass('show');
+                    setTimeout(() => $('.upload-progress-modal').remove(), 300);
+                    
+                    // 显示成功消息
+                    showCustomAlert('上传成功', '数据集已成功上传', 'success');
+                    
+                    // 清空文件输入
+                    $('#strain_data, #strain_summary').val('').removeClass('is-valid');
+                    $('#strain_data, #strain_summary').next('small').html('');
+                },
+                error: function() {
+                    // 隐藏上传进度对话框
+                    $('.upload-progress-modal').removeClass('show');
+                    setTimeout(() => $('.upload-progress-modal').remove(), 300);
+                    
+                    // 显示错误消息
+                    showCustomAlert('上传失败', '数据上传过程中发生错误，请重试', 'error');
+                }
+            });
+        });
+        
+        // 文件选择时的实时验证
+        $('#strain_data, #strain_summary').on('change', function() {
+            const file = this.files[0];
+            const fileId = $(this).attr('id');
+            
+            if (file) {
+                // 文件已选择，移除错误状态
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                
+                // 显示文件名
+                const fileName = file.name;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // 转换为MB
+                
+                // 更新文件信息显示
+                $(this).next('small').html(`已选择: ${fileName} (${fileSize} MB)`);
+            } else {
+                // 未选择文件，显示错误状态
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            }
+        });
+        
+        // 上传进度对话框
+        function showUploadProgress() {
+            const progressHtml = `
+                <div class="upload-progress-modal">
+                    <div class="upload-progress-content">
+                        <div class="upload-progress-header">
+                            <h5 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i>正在上传</h5>
+                        </div>
+                        <div class="upload-progress-body">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <span class="upload-status">准备上传...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const progress = $(progressHtml);
+            $('body').append(progress);
+            
+            // 添加动画
+            setTimeout(() => progress.addClass('show'), 100);
+            
+            // 模拟上传进度
+            let percent = 0;
+            const interval = setInterval(() => {
+                percent += Math.random() * 30;
+                if (percent > 100) percent = 100;
+                
+                progress.find('.progress-bar').css('width', percent + '%');
+                progress.find('.upload-status').text(`已上传 ${Math.round(percent)}%`);
+                
+                if (percent === 100) {
+                    clearInterval(interval);
+                }
+            }, 500);
+        }
+        
+        // 自定义提示框
+        function showCustomAlert(title, message, type = 'error') {
+            const alertHtml = `
+                <div class="custom-alert-backdrop">
+                    <div class="custom-alert ${type}">
+                        <div class="custom-alert-header">
+                            <h5>
+                                <i class="fas fa-${
+                                    type === 'error' ? 'exclamation-circle' : 
+                                    type === 'success' ? 'check-circle' : 
+                                    'info-circle'
+                                } custom-alert-icon"></i>
+                                ${title}
+                            </h5>
+                            <button type="button" class="btn-close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="custom-alert-body">
+                            ${message.split('\n').join('<br>')}
+                        </div>
+                        <div class="custom-alert-footer">
+                            <button type="button" class="custom-alert-btn custom-alert-btn-confirm">
+                                确定
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const alert = $(alertHtml);
+            $('body').append(alert);
+            
+            // 添加动画
+            requestAnimationFrame(() => {
+                alert.addClass('show');
+            });
+            
+            // 关闭按钮和确定按钮事件
+            alert.find('.btn-close, .custom-alert-btn-confirm').on('click', function() {
+                alert.removeClass('show');
+                setTimeout(() => alert.remove(), 300);
+            });
+            
+            // 点击背景关闭
+            alert.on('click', function(e) {
+                if (e.target === this) {
+                    alert.removeClass('show');
+                    setTimeout(() => alert.remove(), 300);
+                }
+            });
+            
+            // ESC键关闭
+            $(document).on('keydown.customAlert', function(e) {
+                if (e.key === 'Escape') {
+                    alert.removeClass('show');
+                    setTimeout(() => {
+                        alert.remove();
+                        $(document).off('keydown.customAlert');
+                    }, 300);
+                }
+            });
+            
+            // 自动关闭（仅对于success和info类型）
+            if (type !== 'error') {
+                setTimeout(() => {
+                    alert.removeClass('show');
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            }
+        }
+
+        // 导出Excel按钮点击事件
+        $("#export-excel-btn").off('click').on('click', function() {
+            var $btn = $(this);
+            // 显示加载中状态
+            $btn.html('<i class="fas fa-spinner fa-spin me-1"></i>导出中...');
+            $btn.prop('disabled', true);
+            
+            // 延迟执行以确保UI更新
+            setTimeout(function() {
+                exportToExcel($btn);
+            }, 100);
+        });
+        
+        // 导出预测结果到Excel
+        function exportToExcel($btn) {
+            // 如果没有传入按钮引用，使用jQuery选择器获取
+            $btn = $btn || $("#export-excel-btn");
+            
+            // 获取最新预测状态
+            $.ajax({
+                url: "{{ url_for('prediction_status') }}",
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    if (!data.results || !data.results.targets || !data.results.predictions) {
+                        showToast("错误", "没有可导出的预测数据", "error");
+                        $btn.html('<i class="fas fa-file-excel me-1"></i>导出Excel');
+                        $btn.prop('disabled', false);
+                        return;
+                    }
+                    
+                    try {
+                        // 提取预测数据
+                        var targets = data.results.targets;
+                        var predictions = data.results.predictions;
+                        var fileNames = data.results.file_names || [];
+                        var materials = [];
+                        
+                        // 尝试从文件名中提取材料信息
+                        if (fileNames.length > 0) {
+                            for (var i = 0; i < fileNames.length; i++) {
+                                var fileName = fileNames[i];
+                                var materialName = "未知";
+                                
+                                // 简单的材料名提取逻辑
+                                var knownMaterials = [
+                                    "1Cr18Ni9T", "16MnR", "45mild", "304SS", "410", "1045HR", 
+                                    "2024-T3", "6061-T6", "7075-T651", "AISI 316L", "Al5083", 
+                                    "AZ31B", "AZ61A", "BT9", "CA", "CP-Ti", "CS", "CuZn37", 
+                                    "E235", "E355", "GH4169", "Haynes188", "HRB335", "inconel718", 
+                                    "mild", "PA38", "pureTi", "q235b", "S45C", "S347", "S460N", 
+                                    "SNCM630", "TC4", "X5CrNi", "ZK60"
+                                ];
+                                
+                                for (var j = 0; j < knownMaterials.length; j++) {
+                                    if (fileName.indexOf(knownMaterials[j]) === 0) {
+                                        materialName = knownMaterials[j];
+                                        break;
+                                    }
+                                }
+                                
+                                materials.push(materialName);
+                            }
+                        } else {
+                            // 如果没有文件名，使用材料统计数据
+                            if (data.material_stats) {
+                                var materialStats = data.material_stats;
+                                var sampleCount = 0;
+                                
+                                for (var material in materialStats) {
+                                    var stats = materialStats[material];
+                                    if (stats.predictions && stats.predictions.length > 0) {
+                                        for (var i = 0; i < stats.predictions.length; i++) {
+                                            if (sampleCount < predictions.length) {
+                                                materials.push(material);
+                                                sampleCount++;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 如果仍然不足，使用默认值
+                            while (materials.length < predictions.length) {
+                                materials.push("未知材料");
+                            }
+                        }
+                        
+                        // 计算循环次数（将对数值转换为循环次数）
+                        var targetCycles = targets.map(function(log) {
+                            return Math.pow(10, log);
+                        });
+                        
+                        var predictionCycles = predictions.map(function(log) {
+                            return Math.pow(10, log);
+                        });
+                        
+                        // 计算误差
+                        var errors = [];
+                        var relativeErrors = [];
+                        var absoluteErrors = [];
+                        
+                        for (var i = 0; i < targets.length; i++) {
+                            var error = predictions[i] - targets[i];
+                            var absError = Math.abs(error);
+                            var relError = targets[i] !== 0 ? (error / Math.abs(targets[i])) * 100 : 0;
+                            
+                            errors.push(error);
+                            absoluteErrors.push(absError);
+                            relativeErrors.push(relError);
+                        }
+                        
+                        // 创建工作表数据
+                        var worksheetData = [];
+                        
+                        // 添加标题行
+                        worksheetData.push([
+                            "样本ID", 
+                            "材料名称", 
+                            "实际寿命(对数)", 
+                            "预测寿命(对数)", 
+                            "误差(对数)", 
+                            "绝对误差(对数)", 
+                            "相对误差(%)",
+                            "实际循环次数", 
+                            "预测循环次数"
+                        ]);
+                        
+                        // 添加数据行
+                        for (var i = 0; i < targets.length; i++) {
+                            worksheetData.push([
+                                i + 1,                            // 样本ID
+                                materials[i],                     // 材料名称
+                                targets[i].toFixed(4),           // 实际寿命(对数)
+                                predictions[i].toFixed(4),        // 预测寿命(对数)
+                                errors[i].toFixed(4),            // 误差(对数)
+                                absoluteErrors[i].toFixed(4),     // 绝对误差(对数)
+                                relativeErrors[i].toFixed(2),     // 相对误差(%)
+                                targetCycles[i].toExponential(2), // 实际循环次数
+                                predictionCycles[i].toExponential(2) // 预测循环次数
+                            ]);
+                        }
+                        
+                        // 添加统计行
+                        worksheetData.push([]);
+                        worksheetData.push(["统计信息"]);
+                        
+                        // 计算统计指标
+                        var mse = data.results.mse || 0;
+                        var mae = data.results.mae || 0;
+                        var r2 = data.results.r2 || 0;
+                        var rmse = data.results.rmse || 0;
+                        
+                        worksheetData.push(["均方误差(MSE)", mse.toFixed(6)]);
+                        worksheetData.push(["平均绝对误差(MAE)", mae.toFixed(6)]);
+                        worksheetData.push(["决定系数(R²)", r2.toFixed(6)]);
+                        worksheetData.push(["均方根误差(RMSE)", rmse.toFixed(6)]);
+                        worksheetData.push(["样本总数", targets.length]);
+                        
+                        // 创建工作表
+                        var worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+                        
+                        // 设置列宽
+                        var colWidths = [
+                            { wch: 8 },  // 样本ID
+                            { wch: 15 }, // 材料名称
+                            { wch: 15 }, // 实际寿命(对数)
+                            { wch: 15 }, // 预测寿命(对数)
+                            { wch: 12 }, // 误差(对数)
+                            { wch: 15 }, // 绝对误差(对数)
+                            { wch: 15 }, // 相对误差(%)
+                            { wch: 18 }, // 实际循环次数
+                            { wch: 18 }  // 预测循环次数
+                        ];
+                        worksheet['!cols'] = colWidths;
+                        
+                        // 创建工作簿
+                        var workbook = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(workbook, worksheet, "预测结果");
+                        
+                        // 如果有材料统计数据，为每种材料创建单独的工作表
+                        if (data.material_stats) {
+                            var materialStats = data.material_stats;
+                            
+                            for (var material in materialStats) {
+                                var stats = materialStats[material];
+                                if (stats.predictions && stats.targets && 
+                                    stats.predictions.length > 0 && stats.targets.length > 0) {
+                                    
+                                    var materialData = [];
+                                    
+                                    // 添加标题行
+                                    materialData.push([
+                                        "样本ID", 
+                                        "实际寿命(对数)", 
+                                        "预测寿命(对数)", 
+                                        "误差(对数)",
+                                        "实际循环次数", 
+                                        "预测循环次数"
+                                    ]);
+                                    
+                                    // 添加数据行
+                                    for (var i = 0; i < stats.predictions.length; i++) {
+                                        var targetCycle = Math.pow(10, stats.targets[i]);
+                                        var predCycle = Math.pow(10, stats.predictions[i]);
+                                        
+                                        materialData.push([
+                                            i + 1,
+                                            stats.targets[i].toFixed(4),
+                                            stats.predictions[i].toFixed(4),
+                                            (stats.predictions[i] - stats.targets[i]).toFixed(4),
+                                            targetCycle.toExponential(2),
+                                            predCycle.toExponential(2)
+                                        ]);
+                                    }
+                                    
+                                    // 添加统计信息
+                                    materialData.push([]);
+                                    materialData.push(["统计信息"]);
+                                    
+                                    if (typeof stats.mse !== 'undefined') {
+                                        materialData.push(["均方误差(MSE)", stats.mse.toFixed(6)]);
+                                    }
+                                    if (typeof stats.mae !== 'undefined') {
+                                        materialData.push(["平均绝对误差(MAE)", stats.mae.toFixed(6)]);
+                                    }
+                                    materialData.push(["样本数量", stats.predictions.length]);
+                                    
+                                    // 创建该材料的工作表
+                                    var materialSheet = XLSX.utils.aoa_to_sheet(materialData);
+                                    
+                                    // 设置列宽
+                                    var materialColWidths = [
+                                        { wch: 8 },  // 样本ID
+                                        { wch: 15 }, // 实际寿命(对数)
+                                        { wch: 15 }, // 预测寿命(对数)
+                                        { wch: 12 }, // 误差(对数)
+                                        { wch: 18 }, // 实际循环次数
+                                        { wch: 18 }  // 预测循环次数
+                                    ];
+                                    materialSheet['!cols'] = materialColWidths;
+                                    
+                                    // 添加工作表到工作簿
+                                    XLSX.utils.book_append_sheet(workbook, materialSheet, material);
+                                }
+                            }
+                        }
+                        
+                        // 获取当前日期时间作为文件名的一部分
+                        var now = new Date();
+                        var dateStr = now.getFullYear() + 
+                                    ('0' + (now.getMonth() + 1)).slice(-2) + 
+                                    ('0' + now.getDate()).slice(-2) + '_' +
+                                    ('0' + now.getHours()).slice(-2) + 
+                                    ('0' + now.getMinutes()).slice(-2);
+                        
+                        // 导出为Excel文件
+                        XLSX.writeFile(workbook, "疲劳寿命预测结果_" + dateStr + ".xlsx");
+                        
+                        // 恢复按钮状态
+                        $btn.html('<i class="fas fa-file-excel me-1"></i>导出Excel');
+                        $btn.prop('disabled', false);
+                        
+                        // 显示成功消息
+                        showToast("导出成功", "预测结果已成功导出为Excel文件", "success");
+                    } catch(e) {
+                        console.error("导出Excel时发生错误:", e);
+                        showToast("导出失败", "导出Excel时发生错误: " + e.message, "error");
+                        
+                        // 恢复按钮状态
+                        $btn.html('<i class="fas fa-file-excel me-1"></i>导出Excel');
+                        $btn.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    showToast("导出失败", "无法获取预测数据", "error");
+                    
+                    // 恢复按钮状态
+                    $btn.html('<i class="fas fa-file-excel me-1"></i>导出Excel');
+                    $btn.prop('disabled', false);
+                }
+            });
+        }
+
+        // 如果页面加载时已有预测结果，显示导出按钮
+        function showExportButton() {
+            if (hasResults) {
+                $("#export-excel-btn").show();
+            } else {
+                $("#export-excel-btn").hide();
+            }
+        }
+        
+        // 初始调用
+        showExportButton();
+    });
+</script>
+{% endblock %} 

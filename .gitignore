@@ -1,0 +1,58 @@
+# 忽略数据文件
+*.csv
+*.CSV
+
+# 忽略模型文件
+*.pth
+*.PTH
+
+# 忽略日志文件
+*.log
+*.LOG
+
+# 忽略常见的Python文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 忽略Jupyter Notebook检查点
+.ipynb_checkpoints
+
+# 忽略虚拟环境
+venv/
+env/
+ENV/
+
+# 忽略IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 忽略操作系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略临时文件
+*.tmp
+*.temp
+*.bak
+
+# 忽略TensorBoard日志目录
+runs/
+logs/
+tensorboard_logs/
+
+# 忽略模型检查点目录
+checkpoints/
+saved_models/
+
+# 忽略数据目录（如果有）
+data/
+datasets/
+
+# 忽略输出目录
+output/
+results/ 

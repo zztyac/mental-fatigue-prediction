@@ -1,0 +1,1497 @@
+{% extends "base.html" %}
+
+{% block title %}模型训练 - 金属多轴疲劳寿命预测系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 粒子背景效果 */
+    .particles-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        overflow: hidden;
+    }
+    
+    .training-progress {
+        height: 30px;
+    }
+    .chart-container {
+        height: 300px;
+        margin-bottom: 20px;
+    }
+    .parameter-card {
+        transition: all 0.3s;
+    }
+    .parameter-card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transform: translateY(-5px);
+    }
+    .training-status {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+    .training-metrics {
+        font-size: 0.9rem;
+    }
+    
+    /* 自定义确认对话框样式 */
+    .custom-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    .custom-modal-backdrop.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .custom-modal-content {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 450px;
+        transform: scale(0.8) translateY(20px);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+    
+    .custom-modal-backdrop.show .custom-modal-content {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+    
+    .custom-modal-header {
+        padding: 20px 25px;
+        background: linear-gradient(135deg, #6046b9, #7e57c2);
+        color: white;
+        position: relative;
+    }
+    
+    .custom-modal-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 80%);
+    }
+    
+    .custom-modal-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        position: relative;
+    }
+    
+    .custom-modal-body {
+        padding: 25px;
+        text-align: center;
+    }
+    
+    .custom-modal-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        display: inline-block;
+        color: #7e57c2;
+        animation: pulse-icon 1.5s infinite;
+    }
+    
+    @keyframes pulse-icon {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .custom-modal-footer {
+        padding: 15px 25px;
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .custom-modal-btn {
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 10px;
+        border: none;
+    }
+    
+    .custom-modal-btn-cancel {
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    
+    .custom-modal-btn-cancel:hover {
+        background-color: #dee2e6;
+    }
+    
+    .custom-modal-btn-confirm {
+        background-color: #7e57c2;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .custom-modal-btn-confirm::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+    
+    .custom-modal-btn-confirm:hover {
+        background-color: #6946b9;
+    }
+    
+    .custom-modal-btn-confirm:active::after {
+        animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+        0% {
+            transform: scale(0, 0);
+            opacity: 0.5;
+        }
+        100% {
+            transform: scale(20, 20);
+            opacity: 0;
+        }
+    }
+    
+    /* 美化的提示框样式 */
+    .custom-alert-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1050;
+        backdrop-filter: blur(5px);
+    }
+    
+    .custom-alert-backdrop.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .custom-alert {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        width: 90%;
+        max-width: 400px;
+        transform: scale(0.8) translateY(-20px);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+    
+    .custom-alert-backdrop.show .custom-alert {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+    
+    .custom-alert.error .custom-alert-header {
+        background: linear-gradient(135deg, #dc3545, #e74c3c);
+    }
+    
+    .custom-alert.success .custom-alert-header {
+        background: linear-gradient(135deg, #28a745, #2ecc71);
+    }
+    
+    .custom-alert.info .custom-alert-header {
+        background: linear-gradient(135deg, #17a2b8, #3498db);
+    }
+    
+    .custom-alert-header {
+        padding: 20px 25px;
+        background: linear-gradient(135deg, #6c757d, #495057);
+        color: white;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .custom-alert-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 80%);
+    }
+    
+    .custom-alert-header h5 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .custom-alert-header .btn-close {
+        background: none;
+        border: none;
+        color: white;
+        padding: 5px;
+        cursor: pointer;
+        opacity: 0.8;
+        transition: all 0.2s;
+    }
+    
+    .custom-alert-header .btn-close:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    
+    .custom-alert-body {
+        padding: 25px;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+    }
+    
+    .custom-alert-icon {
+        font-size: 2rem;
+        margin-bottom: 15px;
+        display: inline-block;
+        animation: bounce 1s infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+    
+    .custom-alert-footer {
+        padding: 15px 25px;
+        background: #f8f9fa;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .custom-alert-btn {
+        padding: 8px 20px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .custom-alert-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+    }
+    
+    .custom-alert-btn:active::after {
+        animation: ripple 1s ease-out;
+    }
+    
+    @keyframes ripple {
+        0% { transform: scale(0, 0); opacity: 0.5; }
+        100% { transform: scale(20, 20); opacity: 0; }
+    }
+    
+    .custom-alert-btn-confirm {
+        background: #007bff;
+        color: white;
+    }
+    
+    .custom-alert-btn-confirm:hover {
+        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    }
+    
+    .custom-alert-btn-cancel {
+        background: #e9ecef;
+        color: #495057;
+    }
+    
+    .custom-alert-btn-cancel:hover {
+        background: #dee2e6;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 上传进度对话框样式 */
+    .upload-progress-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 1050;
+    }
+    
+    .upload-progress-modal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .upload-progress-content {
+        background: white;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 400px;
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+    }
+    
+    .upload-progress-modal.show .upload-progress-content {
+        transform: translateY(0);
+    }
+    
+    .upload-progress-header {
+        padding: 15px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .upload-progress-body {
+        padding: 20px;
+    }
+    
+    .progress {
+        height: 20px;
+    }
+    
+    .data-type-options {
+        padding: 0.5rem 0;
+    }
+    
+    .data-type-option {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: rgba(0,0,0,0.02);
+        border: 1px solid transparent;
+    }
+    
+    .data-type-option:hover {
+        background: rgba(52, 152, 219, 0.1);
+        border-color: rgba(52, 152, 219, 0.2);
+        transform: translateX(5px);
+    }
+    
+    .data-type-option .form-check-label {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+    }
+    
+    .data-type-option .form-check-input {
+        margin-top: 0.3rem;
+    }
+    
+    .data-type-option .fas {
+        font-size: 1.2rem;
+        width: 25px;
+        color: #3498db;
+        transition: all 0.3s ease;
+    }
+    
+    .data-type-option:hover .fas {
+        transform: scale(1.2);
+        color: #2980b9;
+    }
+    
+    .data-type-option input[type="radio"]:checked + label {
+        color: #2980b9;
+        font-weight: 600;
+    }
+    
+    .data-type-option input[type="radio"]:checked + label .fas {
+        color: #2980b9;
+        transform: scale(1.2);
+    }
+    
+    .data-type-option input[type="radio"]:checked + label + .form-check {
+        background: rgba(52, 152, 219, 0.1);
+        border-color: rgba(52, 152, 219, 0.2);
+    }
+    
+    .file-upload-section {
+        padding: 0.5rem 0;
+    }
+    
+    .file-upload-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(0,0,0,0.02);
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .file-upload-item:hover {
+        background: rgba(52, 152, 219, 0.05);
+        border-color: rgba(52, 152, 219, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    .file-upload-item .form-label {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .file-upload-item .form-label i {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+        color: #3498db;
+        width: 24px;
+        transition: all 0.3s ease;
+    }
+    
+    .file-upload-item:hover .form-label i {
+        transform: scale(1.2);
+        color: #2980b9;
+    }
+    
+    .file-upload-item .form-control {
+        border: 2px dashed rgba(52, 152, 219, 0.3);
+        border-radius: 6px;
+        padding: 0.75rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .file-upload-item .form-control:hover {
+        border-color: rgba(52, 152, 219, 0.5);
+        background: rgba(52, 152, 219, 0.02);
+    }
+    
+    .file-upload-item .form-control:focus {
+        border-color: #3498db;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+    
+    .file-upload-item .text-muted {
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        color: #6c757d;
+        transition: all 0.3s ease;
+    }
+    
+    .file-upload-item:hover .text-muted {
+        color: #2980b9;
+    }
+    
+    .file-upload-item.is-valid .form-control {
+        border-color: #2ecc71;
+        border-style: solid;
+    }
+    
+    .file-upload-item.is-valid .form-label i {
+        color: #2ecc71;
+    }
+    
+    .upload-button {
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+    }
+    
+    .upload-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+        background: linear-gradient(135deg, #2980b9, #2573a7);
+    }
+    
+    .upload-button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(52, 152, 219, 0.2);
+    }
+    
+    .upload-button i {
+        transition: all 0.3s ease;
+    }
+    
+    .upload-button:hover i {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="particles-background" id="particles-js"></div>
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="my-2"><i class="fas fa-graduation-cap me-2"></i>模型训练</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class=""></i>
+                        <strong>模型训练过程说明：</strong> 在此页面可以上传金属疲劳数据集，设置模型参数，启动训练过程。系统将根据参数训练Transformer模型，实时显示训练进度和性能指标。
+                    </div>
+                    
+                    <ul class="nav nav-tabs mb-4" id="trainingTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="dataset-tab" data-bs-toggle="tab" data-bs-target="#dataset" type="button" role="tab" aria-controls="dataset" aria-selected="true">
+                                <i class="fas fa-database me-1"></i>数据集
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="parameters-tab" data-bs-toggle="tab" data-bs-target="#parameters" type="button" role="tab" aria-controls="parameters" aria-selected="false">
+                                <i class="fas fa-sliders-h me-1"></i>参数设置
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="training-tab" data-bs-toggle="tab" data-bs-target="#training" type="button" role="tab" aria-controls="training" aria-selected="false">
+                                <i class="fas fa-chart-line me-1"></i>训练过程
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="trainingTabsContent">
+                        <!-- 数据集选项卡 -->
+                        <div class="tab-pane fade show active" id="dataset" role="tabpanel" aria-labelledby="dataset-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0"><i class="fas fa-upload me-2"></i>上传数据集</h5>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <form id="uploadDatasetForm" action="{{ url_for('upload_dataset') }}" method="post" enctype="multipart/form-data" class="h-100 d-flex flex-column">
+                                                <div class="file-upload-section flex-grow-1">
+                                                    <div class="file-upload-item">
+                                                        <label for="strain_data" class="form-label">
+                                                            <i class="fas fa-file-archive"></i>
+                                                            控制数据文件夹 (ZIP)
+                                                        </label>
+                                                        <input type="file" class="form-control" id="strain_data" name="strain_data" accept=".zip">
+                                                        <small class="text-muted">包含所有控制的时序CSV文件的压缩包</small>
+                                                        <div class="invalid-feedback" id="strain_data_feedback">
+                                                            请选择控制数据文件
+                                                        </div>
+                                                    </div>
+                                                    <div class="file-upload-item">
+                                                        <label for="strain_summary" class="form-label">
+                                                            <i class="fas fa-file-csv"></i>
+                                                            控制汇总文件 (CSV)
+                                                        </label>
+                                                        <input type="file" class="form-control" id="strain_summary" name="strain_summary" accept=".csv">
+                                                        <small class="text-muted">包含材料属性和寿命的汇总CSV文件</small>
+                                                        <div class="invalid-feedback" id="strain_summary_feedback">
+                                                            请选择控制汇总文件
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-auto">
+                                                    <button type="submit" class="btn upload-button w-100" id="uploadButton">
+                                                        <i class="fas fa-cloud-upload-alt me-2"></i>上传数据集
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-secondary text-white">
+                                            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>数据类型选择</h5>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="flex-grow-1">
+                                                <label class="form-label fs-5 mb-3">选择数据类型</label>
+                                                <div class="data-type-options">
+                                                    <div class="form-check data-type-option mb-3">
+                                                        <input class="form-check-input" type="radio" name="train_data_type" id="data_type_strain" value="strain" checked>
+                                                        <label class="form-check-label" for="data_type_strain">
+                                                            <i class="fas fa-layer-group me-2"></i>应变控制数据
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check data-type-option mb-3">
+                                                        <input class="form-check-input" type="radio" name="train_data_type" id="data_type_stress" value="stress">
+                                                        <label class="form-check-label" for="data_type_stress">
+                                                            <i class="fas fa-compress me-2"></i>应力控制数据
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="alert alert-warning mt-auto mb-0">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                <strong>注意：</strong> 请确保已上传相应的数据文件，否则训练过程将使用系统中已有的数据集。
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 参数设置选项卡 -->
+                        <div class="tab-pane fade" id="parameters" role="tabpanel" aria-labelledby="parameters-tab">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card mb-4 parameter-card">
+                                        <div class="card-header bg-primary text-white">
+                                            <h5 class="mb-0"><i class="fas fa-brain me-2"></i>模型参数</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="d_model" class="form-label">模型维度 (d_model)</label>
+                                                <input type="number" class="form-control" id="d_model" name="d_model" value="{{ default_params.d_model }}" min="16" max="512" step="16">
+                                                <small class="text-muted">模型内部表示的维度，影响特征提取能力和模型容量</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="nhead" class="form-label">注意力头数 (nhead)</label>
+                                                <input type="number" class="form-control" id="nhead" name="nhead" value="{{ default_params.nhead }}" min="1" max="16">
+                                                <small class="text-muted">多头注意力机制中的头数，影响模型捕捉不同特征的能力</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="num_encoder_layers" class="form-label">编码器层数</label>
+                                                <input type="number" class="form-control" id="num_encoder_layers" name="num_encoder_layers" value="{{ default_params.num_encoder_layers }}" min="1" max="12">
+                                                <small class="text-muted">Transformer编码器的层数，影响模型深度和复杂性</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-4 parameter-card">
+                                        <div class="card-header bg-success text-white">
+                                            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>训练参数</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="batch_size" class="form-label">批次大小 (batch_size)</label>
+                                                <input type="number" class="form-control" id="batch_size" name="batch_size" value="{{ default_params.batch_size }}" min="4" max="128" step="4">
+                                                <small class="text-muted">每次迭代处理的样本数量，影响训练速度和内存使用</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="epochs" class="form-label">训练轮数 (epochs)</label>
+                                                <input type="number" class="form-control" id="epochs" name="epochs" value="{{ default_params.epochs }}" min="1" max="1000">
+                                                <small class="text-muted">完整训练数据集的次数，影响模型收敛程度</small>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="learning_rate" class="form-label">学习率 (learning_rate)</label>
+                                                <input type="number" class="form-control" id="learning_rate" name="learning_rate" value="{{ default_params.learning_rate }}" min="0.00001" max="0.1" step="0.00001">
+                                                <small class="text-muted">参数更新的步长，影响训练速度和稳定性</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-4">
+                                    <div class="d-grid">
+                                        <button id="startTrainingBtn" class="btn btn-lg btn-success">
+                                            <i class="fas fa-play-circle me-2"></i>开始训练
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 训练过程选项卡 -->
+                        <div class="tab-pane fade" id="training" role="tabpanel" aria-labelledby="training-tab">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <div class="card mb-4">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>训练状态</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>当前状态:</span>
+                                                <span id="training-status" class="training-status">{{ training_stats.status }}</span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="epochProgress" class="form-label d-flex justify-content-between">
+                                                    <span>训练进度:</span>
+                                                    <span id="epoch-progress-text">{{ training_stats.current_epoch }}/{{ training_stats.total_epochs }}</span>
+                                                </label>
+                                                <div class="progress training-progress">
+                                                    <div id="epochProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="{{ training_stats.current_epoch }}" aria-valuemin="0" aria-valuemax="{{ training_stats.total_epochs }}" style="width: {{ (training_stats.current_epoch / training_stats.total_epochs * 100) if training_stats.total_epochs > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="batchProgress" class="form-label d-flex justify-content-between">
+                                                    <span>批次进度:</span>
+                                                    <span id="batch-progress-text">{{ training_stats.current_batch }}/{{ training_stats.total_batches }}</span>
+                                                </label>
+                                                <div class="progress training-progress">
+                                                    <div id="batchProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" aria-valuenow="{{ training_stats.current_batch }}" aria-valuemin="0" aria-valuemax="{{ training_stats.total_batches }}" style="width: {{ (training_stats.current_batch / training_stats.total_batches * 100) if training_stats.total_batches > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-header bg-secondary text-white">
+                                            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>训练指标</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <table class="table">
+                                                <tbody>
+                                                    <tr>
+                                                        <td>数据集大小</td>
+                                                        <td id="dataset-size" class="text-end">{{ training_stats.sample_count }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>材料种类数</td>
+                                                        <td id="material-count" class="text-end">{{ training_stats.material_count }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>训练时长</td>
+                                                        <td id="training-time" class="text-end">{{ training_stats.elapsed_time|round(2) }} 秒</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>当前训练损失</td>
+                                                        <td id="current-train-loss" class="text-end">{{ training_stats.train_loss[-1]|round(6) if training_stats.train_loss else '暂无数据' }}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>当前测试损失</td>
+                                                        <td id="current-test-loss" class="text-end">{{ training_stats.test_loss[-1]|round(6) if training_stats.test_loss else '暂无数据' }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>损失曲线</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div id="lossChart" class="chart-container"></div>
+                                            <div class="text-center training-metrics">
+                                                <span class="badge bg-primary me-2">训练损失</span>
+                                                <span class="badge bg-success">测试损失</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 自定义确认对话框 - 训练模型 -->
+    <div class="custom-modal-backdrop" id="confirmTrainingModal">
+        <div class="custom-modal-content">
+            <div class="custom-modal-header">
+                <h5><i class="fas fa-graduation-cap me-2"></i>确认训练操作</h5>
+            </div>
+            <div class="custom-modal-body">
+                <div class="custom-modal-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <p class="mb-1">您确定要开始模型训练吗？</p>
+                <p class="text-muted small">系统将使用当前参数配置进行模型训练，这可能需要一些时间</p>
+            </div>
+            <div class="custom-modal-footer">
+                <button type="button" class="custom-modal-btn custom-modal-btn-cancel" id="cancelTrainingBtn">
+                    <i class="fas fa-times me-1"></i>取消
+                </button>
+                <button type="button" class="custom-modal-btn custom-modal-btn-confirm" id="confirmTrainingBtn">
+                    <i class="fas fa-check me-1"></i>确认训练
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/particles.min.js') }}"></script>
+<script>
+    // 初始化粒子背景
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof particlesJS !== 'undefined') {
+            particlesJS('particles-js', {
+                "particles": {
+                    "number": {
+                        "value": 80,
+                        "density": {
+                            "enable": true,
+                            "value_area": 800
+                        }
+                    },
+                    "color": {
+                        "value": "#4A6CF7"
+                    },
+                    "shape": {
+                        "type": "circle",
+                        "stroke": {
+                            "width": 0,
+                            "color": "#000000"
+                        },
+                        "polygon": {
+                            "nb_sides": 5
+                        }
+                    },
+                    "opacity": {
+                        "value": 0.5,
+                        "random": false,
+                        "anim": {
+                            "enable": false,
+                            "speed": 1,
+                            "opacity_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "size": {
+                        "value": 3,
+                        "random": true,
+                        "anim": {
+                            "enable": false,
+                            "speed": 40,
+                            "size_min": 0.1,
+                            "sync": false
+                        }
+                    },
+                    "line_linked": {
+                        "enable": true,
+                        "distance": 150,
+                        "color": "#4A6CF7",
+                        "opacity": 0.2,
+                        "width": 1
+                    },
+                    "move": {
+                        "enable": true,
+                        "speed": 2,
+                        "direction": "none",
+                        "random": false,
+                        "straight": false,
+                        "out_mode": "out",
+                        "bounce": false,
+                        "attract": {
+                            "enable": false,
+                            "rotateX": 600,
+                            "rotateY": 1200
+                        }
+                    }
+                },
+                "interactivity": {
+                    "detect_on": "canvas",
+                    "events": {
+                        "onhover": {
+                            "enable": true,
+                            "mode": "grab"
+                        },
+                        "onclick": {
+                            "enable": true,
+                            "mode": "push"
+                        },
+                        "resize": true
+                    },
+                    "modes": {
+                        "grab": {
+                            "distance": 140,
+                            "line_linked": {
+                                "opacity": 1
+                            }
+                        },
+                        "bubble": {
+                            "distance": 400,
+                            "size": 40,
+                            "duration": 2,
+                            "opacity": 8,
+                            "speed": 3
+                        },
+                        "repulse": {
+                            "distance": 200,
+                            "duration": 0.4
+                        },
+                        "push": {
+                            "particles_nb": 4
+                        },
+                        "remove": {
+                            "particles_nb": 2
+                        }
+                    }
+                },
+                "retina_detect": true
+            });
+        }
+    });
+
+    $(document).ready(function() {
+        // 初始化图表
+        var lossChart = echarts.init(document.getElementById('lossChart'));
+        var lossChartOption = {
+            title: {
+                text: '训练和测试损失',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'cross',
+                    label: {
+                        backgroundColor: '#6a7985'
+                    }
+                }
+            },
+            legend: {
+                data: ['训练损失', '测试损失'],
+                bottom: 10
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '15%',
+                top: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: []
+            },
+            yAxis: {
+                type: 'value',
+                name: '损失',
+                nameLocation: 'middle',
+                nameGap: 40,
+                axisLabel: {
+                    formatter: '{value}'
+                }
+            },
+            series: [
+                {
+                    name: '训练损失',
+                    type: 'line',
+                    data: [],
+                    smooth: true,
+                    lineStyle: {
+                        width: 3
+                    },
+                    itemStyle: {
+                        color: '#3498db'
+                    }
+                },
+                {
+                    name: '测试损失',
+                    type: 'line',
+                    data: [],
+                    smooth: true,
+                    lineStyle: {
+                        width: 3
+                    },
+                    itemStyle: {
+                        color: '#2ecc71'
+                    }
+                }
+            ]
+        };
+        lossChart.setOption(lossChartOption);
+        
+        // 当窗口大小改变时，重置图表大小
+        window.addEventListener('resize', function() {
+            lossChart.resize();
+        });
+        
+        // 开始训练按钮点击事件
+        $("#startTrainingBtn").click(function() {
+            console.log("开始训练按钮被点击");
+            showCustomConfirm('confirmTrainingModal', function() {
+                console.log("确认对话框确认按钮被点击");
+                // 收集参数
+                var data = {
+                    data_type: $("input[name='train_data_type']:checked").val(),
+                    d_model: $("#d_model").val(),
+                    nhead: $("#nhead").val(),
+                    num_encoder_layers: $("#num_encoder_layers").val(),
+                    epochs: $("#epochs").val(),
+                    batch_size: $("#batch_size").val(),
+                    learning_rate: $("#learning_rate").val(),
+                    model_name: $("#model_name").val()
+                };
+                
+                console.log("即将发送的训练参数：", data);
+                
+                // 发送请求
+                $.ajax({
+                    url: "{{ url_for('start_training') }}",  // 发送到后端的/start_training路由
+                    type: "POST",  // POST方法
+                    data: data,  // 发送收集的参数
+                    success: function(response) {
+                        // 处理成功响应
+                        console.log("训练请求成功，响应：", response);
+                        if (response.status === "success") {
+                            // 切换到训练过程选项卡
+                            console.log("正在切换到训练过程选项卡");
+                            $("#training-tab").tab("show");
+                            // 开始更新训练状态
+                            startStatusUpdates();
+                        } else {
+                            // 显示错误提示
+                            showToast("错误", response.message, "error");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // 处理请求错误
+                        console.error("训练请求失败：", status, error);
+                        console.log("请求详情：", xhr);
+                        showToast("错误", "发送请求时发生错误，请重试。", "error");
+                    }
+                });
+            });
+        });
+        
+        // Toast通知系统
+        function showToast(title, message, type) {
+            // 如果页面中没有toast容器，则创建一个
+            if ($('#toast-container').length === 0) {
+                $('body').append('<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 1060;"></div>');
+            }
+            
+            // 设置颜色样式
+            let bgColor = 'bg-primary';
+            let icon = 'info-circle';
+            
+            if (type === 'error') {
+                bgColor = 'bg-danger';
+                icon = 'exclamation-circle';
+            } else if (type === 'success') {
+                bgColor = 'bg-success';
+                icon = 'check-circle';
+            } else if (type === 'warning') {
+                bgColor = 'bg-warning';
+                icon = 'exclamation-triangle';
+            }
+            
+            // 创建toast元素
+            const toastId = 'toast-' + Date.now();
+            const toastHtml = `
+                <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000" 
+                     style="min-width: 300px; opacity: 0; transform: translateY(-20px); transition: all 0.3s ease;">
+                    <div class="toast-header ${bgColor} text-white">
+                        <i class="fas fa-${icon} me-2"></i>
+                        <strong class="me-auto">${title}</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            // 添加到容器并显示
+            $('#toast-container').append(toastHtml);
+            const toastElement = document.getElementById(toastId);
+            
+            // 应用动画
+            setTimeout(() => {
+                $(toastElement).css({
+                    'opacity': '1',
+                    'transform': 'translateY(0)'
+                });
+            }, 50);
+            
+            // 设置自动关闭
+            setTimeout(() => {
+                $(toastElement).css({
+                    'opacity': '0',
+                    'transform': 'translateY(-20px)'
+                });
+                
+                setTimeout(() => {
+                    $(toastElement).remove();
+                }, 300);
+            }, 4000);
+        }
+        
+        // 自定义确认对话框管理
+        function showCustomConfirm(modalId, confirmCallback) {
+            console.log("显示确认对话框:", modalId);
+            const modal = document.getElementById(modalId);
+            $(modal).addClass('show');
+            
+            // 事件绑定
+            $(modal).find('.custom-modal-btn-cancel').one('click', function() {
+                console.log("取消按钮被点击");
+                $(modal).removeClass('show');
+            });
+            
+            $(modal).find('.custom-modal-btn-confirm').one('click', function() {
+                console.log("确认按钮被点击");
+                $(modal).removeClass('show');
+                if (typeof confirmCallback === 'function') {
+                    confirmCallback();
+                }
+            });
+        }
+        
+        // 定期更新训练状态
+        function startStatusUpdates() {
+            // 立即获取一次状态
+            updateTrainingStatus();
+            
+            // 每秒更新一次
+            var statusInterval = setInterval(function() {
+                updateTrainingStatus(function(data) {
+                    if (!data.is_training) {
+                        // 训练结束，停止更新
+                        clearInterval(statusInterval);
+                    }
+                });
+            }, 1000);
+        }
+        
+        // 更新训练状态
+        function updateTrainingStatus(callback) {
+            $.ajax({
+                url: "{{ url_for('training_status') }}",
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    // 更新状态文本
+                    $("#training-status").text(data.status);
+                    
+                    // 更新进度条
+                    var epochProgress = data.total_epochs > 0 ? (data.current_epoch / data.total_epochs * 100) : 0;
+                    var batchProgress = data.total_batches > 0 ? (data.current_batch / data.total_batches * 100) : 0;
+                    
+                    $("#epoch-progress-text").text(data.current_epoch + "/" + data.total_epochs);
+                    $("#batch-progress-text").text(data.current_batch + "/" + data.total_batches);
+                    
+                    $("#epochProgressBar").css("width", epochProgress + "%").attr("aria-valuenow", data.current_epoch);
+                    $("#batchProgressBar").css("width", batchProgress + "%").attr("aria-valuenow", data.current_batch);
+                    
+                    // 更新指标
+                    $("#dataset-size").text(data.sample_count);
+                    $("#material-count").text(data.material_count);
+                    $("#training-time").text((data.elapsed_time || 0).toFixed(2) + " 秒");
+                    
+                    if (data.train_loss && data.train_loss.length > 0) {
+                        $("#current-train-loss").text(data.train_loss[data.train_loss.length - 1].toFixed(6));
+                    }
+                    
+                    if (data.test_loss && data.test_loss.length > 0) {
+                        $("#current-test-loss").text(data.test_loss[data.test_loss.length - 1].toFixed(6));
+                    }
+                    
+                    // 更新损失图表
+                    updateLossChart(data.train_loss, data.test_loss);
+                    
+                    // 如果提供了回调，就调用它
+                    if (callback) {
+                        callback(data);
+                    }
+                },
+                error: function() {
+                    console.error("获取训练状态时发生错误");
+                }
+            });
+        }
+        
+        // 更新损失图表
+        function updateLossChart(trainLoss, testLoss) {
+            if (!trainLoss || trainLoss.length === 0) return;
+            
+            var epochs = [];
+            for (var i = 0; i < trainLoss.length; i++) {
+                epochs.push('Epoch ' + (i + 1));
+            }
+            
+            lossChartOption.xAxis.data = epochs;
+            lossChartOption.series[0].data = trainLoss;
+            
+            if (testLoss && testLoss.length > 0) {
+                lossChartOption.series[1].data = testLoss;
+            }
+            
+            lossChart.setOption(lossChartOption);
+        }
+        
+        // 如果已经在训练中，开始更新状态
+        var isTraining = {% if training_stats.is_training %}true{% else %}false{% endif %};
+        if (isTraining) {
+            startStatusUpdates();
+        }
+        
+        // 文件上传表单验证
+        $('#uploadDatasetForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取文件输入
+            const strainData = $('#strain_data')[0].files[0];
+            const strainSummary = $('#strain_summary')[0].files[0];
+            
+            // 重置所有验证状态
+            $('#strain_data, #strain_summary').removeClass('is-invalid');
+            
+            // 验证文件是否选择
+            let isValid = true;
+            let errorMessage = '';
+            
+            if (!strainData) {
+                $('#strain_data').addClass('is-invalid');
+                errorMessage += '请选择应变控制数据文件\n';
+                isValid = false;
+            }
+            
+            if (!strainSummary) {
+                $('#strain_summary').addClass('is-invalid');
+                errorMessage += '请选择应变控制汇总文件\n';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                // 使用自定义提示框显示错误
+                showCustomAlert('上传错误', errorMessage, 'error');
+                return false;
+            }
+            
+            // 显示上传进度对话框
+            showUploadProgress();
+            
+            // 提交表单
+            const formData = new FormData(this);
+            
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    // 隐藏上传进度对话框
+                    $('.upload-progress-modal').removeClass('show');
+                    setTimeout(() => $('.upload-progress-modal').remove(), 300);
+                    
+                    // 显示成功提示
+                    showCustomAlert('上传成功', '数据集已成功上传到服务器！', 'success');
+                    
+                    // 重置表单
+                    $('#uploadDatasetForm')[0].reset();
+                    $('#strain_data, #strain_summary').removeClass('is-valid');
+                    $('#strain_data, #strain_summary').next('small').text('');
+                },
+                error: function(xhr) {
+                    // 隐藏上传进度对话框
+                    $('.upload-progress-modal').removeClass('show');
+                    setTimeout(() => $('.upload-progress-modal').remove(), 300);
+                    
+                    // 显示错误提示
+                    let errorMessage = '上传数据集时发生错误';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMessage = xhr.responseJSON.error;
+                    }
+                    showCustomAlert('上传失败', errorMessage, 'error');
+                }
+            });
+            
+            return false;
+        });
+        
+        // 文件选择时的实时验证
+        $('#strain_data, #strain_summary').on('change', function() {
+            const file = this.files[0];
+            const fileId = $(this).attr('id');
+            
+            if (file) {
+                // 文件已选择，移除错误状态
+                $(this).removeClass('is-invalid').addClass('is-valid');
+                
+                // 显示文件名
+                const fileName = file.name;
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // 转换为MB
+                
+                // 更新文件信息显示
+                $(this).next('small').html(`已选择: ${fileName} (${fileSize} MB)`);
+            } else {
+                // 未选择文件，显示错误状态
+                $(this).removeClass('is-valid').addClass('is-invalid');
+            }
+        });
+        
+        // 自定义提示框
+        function showCustomAlert(title, message, type = 'error') {
+            const alertHtml = `
+                <div class="custom-alert-backdrop">
+                    <div class="custom-alert ${type}">
+                        <div class="custom-alert-header">
+                            <h5>
+                                <i class="fas fa-${
+                                    type === 'error' ? 'exclamation-circle' : 
+                                    type === 'success' ? 'check-circle' : 
+                                    'info-circle'
+                                } custom-alert-icon"></i>
+                                ${title}
+                            </h5>
+                            <button type="button" class="btn-close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="custom-alert-body">
+                            ${message.split('\n').join('<br>')}
+                        </div>
+                        <div class="custom-alert-footer">
+                            <button type="button" class="custom-alert-btn custom-alert-btn-confirm">
+                                确定
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const alert = $(alertHtml);
+            $('body').append(alert);
+            
+            // 添加动画
+            requestAnimationFrame(() => {
+                alert.addClass('show');
+            });
+            
+            // 关闭按钮和确定按钮事件
+            alert.find('.btn-close, .custom-alert-btn-confirm').on('click', function() {
+                alert.removeClass('show');
+                setTimeout(() => alert.remove(), 300);
+            });
+            
+            // 点击背景关闭
+            alert.on('click', function(e) {
+                if (e.target === this) {
+                    alert.removeClass('show');
+                    setTimeout(() => alert.remove(), 300);
+                }
+            });
+            
+            // ESC键关闭
+            $(document).on('keydown.customAlert', function(e) {
+                if (e.key === 'Escape') {
+                    alert.removeClass('show');
+                    setTimeout(() => {
+                        alert.remove();
+                        $(document).off('keydown.customAlert');
+                    }, 300);
+                }
+            });
+            
+            // 自动关闭（仅对于success和info类型）
+            if (type !== 'error') {
+                setTimeout(() => {
+                    alert.removeClass('show');
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            }
+        }
+        
+        // 上传进度对话框
+        function showUploadProgress() {
+            const progressHtml = `
+                <div class="upload-progress-modal">
+                    <div class="upload-progress-content">
+                        <div class="upload-progress-header">
+                            <h5 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i>正在上传</h5>
+                        </div>
+                        <div class="upload-progress-body">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <span class="upload-status">准备上传...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const progress = $(progressHtml);
+            $('body').append(progress);
+            
+            // 添加动画
+            setTimeout(() => progress.addClass('show'), 100);
+            
+            // 模拟上传进度
+            let percent = 0;
+            const interval = setInterval(() => {
+                percent += Math.random() * 30;
+                if (percent > 100) percent = 100;
+                
+                progress.find('.progress-bar').css('width', percent + '%');
+                progress.find('.upload-status').text(`已上传 ${Math.round(percent)}%`);
+                
+                if (percent === 100) {
+                    clearInterval(interval);
+                }
+            }, 500);
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,475 @@
+/* 全局样式 */
+:root {
+    --primary-color: #2c3e50;      /* 深蓝灰色 - 主色调 */
+    --secondary-color: #34495e;    /* 亮蓝灰色 - 次要色调 */
+    --accent-color: #3498db;       /* 蓝色 - 强调色 */
+    --accent-secondary: #2980b9;   /* 深蓝色 - 次要强调色 */
+    --success-color: #27ae60;      /* 绿色 */
+    --info-color: #00b8d4;         /* 青色 */
+    --warning-color: #f39c12;      /* 橙色 */
+    --danger-color: #e74c3c;       /* 红色 */
+    --light-color: #ecf0f1;        /* 浅灰色 */
+    --dark-color: #1a1a1a;         /* 深灰色 */
+    --text-primary: #333333;       /* 主要文本颜色 */
+    --text-secondary: #7f8c8d;     /* 次要文本颜色 */
+    --background-color: #f5f7fa;   /* 背景色 */
+    --card-background: #ffffff;    /* 卡片背景色 */
+    --border-radius: 4px;          /* 标准圆角 */
+    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* 标准阴影 */
+    --transition-speed: 0.3s;      /* 标准过渡速度 */
+    --navbar-height: 70px;         /* 导航栏高度 */
+}
+
+body {
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* 卡片阴影效果 */
+.card {
+    box-shadow: var(--box-shadow);
+    border: none;
+    border-radius: var(--border-radius);
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    background-color: var(--card-background);
+}
+
+.card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    transform: translateY(-3px);
+}
+
+/* 导航栏自定义 - 新的悬浮风格 */
+.navbar {
+    background-color: transparent !important;
+    box-shadow: none;
+    padding: 15px 0;
+    transition: all 0.4s ease;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    height: var(--navbar-height);
+}
+
+.navbar-scrolled {
+    background-color: rgba(245, 247, 250, 0.85) !important; /* 使用背景色但带透明度 */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 10px 0;
+}
+
+.navbar-dark .navbar-brand {
+    color: var(--primary-color);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.navbar-dark .navbar-brand:hover {
+    transform: scale(1.05);
+}
+
+.navbar-dark .navbar-toggler {
+    border: none;
+    padding: 0.5rem;
+    color: var(--primary-color);
+}
+
+.navbar-dark .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(44, 62, 80, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: var(--primary-color);
+    font-weight: 500;
+    padding: 8px 20px !important;
+    margin: 0 5px;
+    position: relative;
+    transition: all 0.3s ease;
+    border-radius: 30px;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.navbar-dark .navbar-nav .nav-link.active {
+    color: var(--accent-color);
+    font-weight: 600;
+    background-color: rgba(52, 152, 219, 0.15);
+}
+
+.nav-link-active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background-color: var(--accent-color);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+}
+
+.nav-link.active .nav-link-active::after,
+.nav-link:hover .nav-link-active::after {
+    width: 30px;
+}
+
+/* 为导航链接添加悬停动画 */
+.navbar-dark .navbar-nav .nav-link::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background-color: var(--accent-color);
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+    opacity: 0;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover::before {
+    width: 30px;
+    opacity: 1;
+}
+
+/* 为导航项添加图标悬停效果 */
+.navbar-dark .navbar-nav .nav-link i {
+    margin-right: 5px;
+    transition: all 0.3s ease;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover i {
+    transform: translateY(-3px);
+    color: var(--accent-color);
+}
+
+/* 适应深色背景的样式 - 滚动后 */
+.navbar-scrolled .navbar-brand,
+.navbar-scrolled .navbar-nav .nav-link {
+    color: var(--primary-color);
+}
+
+/* 内容区域补偿导航栏高度 */
+.container-fluid.mt-4 {
+    margin-top: calc(var(--navbar-height) + 20px) !important;
+}
+
+/* 按钮样式 */
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    padding: 0.6rem 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--accent-secondary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 卡片标题 */
+.card-header {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 15px 20px;
+}
+
+/* 图标容器 */
+.icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.icon-primary {
+    background-color: rgba(52, 152, 219, 0.1);
+    color: var(--accent-color);
+}
+
+.icon-success {
+    background-color: rgba(39, 174, 96, 0.1);
+    color: var(--success-color);
+}
+
+.icon-warning {
+    background-color: rgba(243, 156, 18, 0.1);
+    color: var(--warning-color);
+}
+
+.icon-danger {
+    background-color: rgba(231, 76, 60, 0.1);
+    color: var(--danger-color);
+}
+
+/* 表格样式 */
+.table th {
+    background-color: var(--light-color);
+    font-weight: 600;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* 自定义进度条 */
+.progress {
+    height: 10px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* 表单控件 */
+.form-control, .form-select {
+    border-radius: var(--border-radius);
+    border: 1px solid #ddd;
+    padding: 10px 15px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+/* 加载动画 */
+.loading-spinner {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    vertical-align: text-bottom;
+    border: 0.25rem solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+
+/* Tab切换动画 */
+.tab-pane.fade {
+    transition: all 0.3s ease-out;
+}
+
+.tab-pane.fade:not(.show) {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.tab-pane.fade.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 图表容器 */
+.chart-wrapper {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--box-shadow);
+}
+
+/* 页脚 */
+.footer {
+    background-color: var(--primary-color) !important;
+    color: #ffffff !important;
+    padding: 20px 0;
+}
+
+.footer .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeInUp {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* 图表容器样式 */
+.chart-container {
+    height: 300px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+/* 训练进度条样式 */
+.training-progress {
+    height: 30px;
+}
+
+/* 训练状态样式 */
+.training-status {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+/* 预测状态样式 */
+.prediction-status {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+/* 卡片悬停效果 */
+.parameter-card, .material-card {
+    transition: all 0.3s;
+}
+
+.parameter-card:hover, .material-card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-5px);
+}
+
+/* 可视化大屏样式 */
+.dashboard-container {
+    background-color: #1e2130;
+    padding: 20px;
+    color: #ffffff;
+    min-height: calc(100vh - 180px);
+}
+
+.chart-card {
+    background-color: #252b3b;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    margin-bottom: 20px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.chart-header {
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    padding: 12px 20px;
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-body {
+    padding: 20px;
+    height: calc(100% - 50px);
+}
+
+.status-card {
+    background: linear-gradient(135deg, #252b3b, #1e2130);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.status-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.status-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    margin-top: 15px;
+    background: linear-gradient(90deg, var(--accent-color), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.status-label {
+    font-size: 0.95rem;
+    color: #bbb;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.metrics-card {
+    border-left: 4px solid var(--accent-color);
+}
+
+/* 添加滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background-color: #fff;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+} 
