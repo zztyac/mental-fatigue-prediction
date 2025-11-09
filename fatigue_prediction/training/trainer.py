@@ -1,5 +1,5 @@
 """
-训练器模块 - 负责模型训练、验证和测试
+Trainer Module - Responsible for model training, validation and testing
 """
 
 import os
@@ -12,47 +12,47 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# 设置日志
+# Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class FatigueTrainer:
     """
-    疲劳寿命预测模型训练器，处理训练、验证和测试过程
+    Fatigue life prediction model trainer that handles training, validation and testing processes
     """
     
     def __init__(self, model, train_config, device=None):
         """
-        初始化训练器
+        Initialize trainer
         
-        参数:
-            model: 待训练的模型
-            train_config: 训练配置字典
-            device: 训练设备（CPU或GPU）
+        Args:
+            model: Model to be trained
+            train_config: Training configuration dictionary
+            device: Training device (CPU or GPU)
         """
         self.model = model
         self.config = train_config
         
-        # 设置设备
+        # Setup device
         if device is None:
             self.device = torch.device('cuda' if torch.cuda.is_available() and self.config.get('use_gpu', True) else 'cpu')
         else:
             self.device = device
             
-        # 将模型移动到指定设备
+        # Move model to specified device
         self.model.to(self.device)
         
-        # 设置损失函数
+        # Setup loss function
         self.criterion = nn.MSELoss()
         
-        # 设置优化器
+        # Setup optimizer
         self.optimizer = optim.AdamW(
             self.model.parameters(),
             lr=self.config['learning_rate'],
             weight_decay=self.config['weight_decay']
         )
         
-        # 设置学习率调度器
+        # Setup learning rate scheduler
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer,
             mode='min',
@@ -60,41 +60,41 @@ class FatigueTrainer:
             patience=self.config['lr_scheduler_patience']
         )
         
-        # 设置早停
+        # Setup early stopping
         self.early_stop_patience = self.config['early_stop_patience']
         self.best_val_loss = float('inf')
         self.best_epoch = -1
         self.epochs_without_improvement = 0
         
-        # 设置日志目录
+        # Setup logging directory
         if 'logging_dir' in self.config:
             os.makedirs(self.config['logging_dir'], exist_ok=True)
             self.writer = SummaryWriter(log_dir=self.config['logging_dir'])
         else:
             self.writer = None
         
-        # 回调函数
+        # Callback functions
         self.on_batch_end_callback = None
         self.on_epoch_end_callback = None
         self.on_test_end_callback = None
         self.on_training_end_callback = None
         
-        # 日志
+        # Logger
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.info(f"训练器初始化完成，设备: {self.device}")
+        self.logger.info(f"Trainer initialized, device: {self.device}")
         
-        # 数据类型 
+        # Data type 
         self.data_type = None
         
     def set_training_callbacks(self, on_batch_end=None, on_epoch_end=None, on_test_end=None, on_training_end=None):
         """
-        设置训练过程的回调函数
+        Set callback functions for training process
         
-        参数:
-            on_batch_end: 每个批次结束时的回调
-            on_epoch_end: 每个轮次结束时的回调
-            on_test_end: 测试结束时的回调
-            on_training_end: 训练结束时的回调
+        Args:
+            on_batch_end: Callback at the end of each batch
+            on_epoch_end: Callback at the end of each epoch
+            on_test_end: Callback at the end of testing
+            on_training_end: Callback at the end of training
         """
         self.on_batch_end_callback = on_batch_end
         self.on_epoch_end_callback = on_epoch_end
@@ -103,55 +103,55 @@ class FatigueTrainer:
         
     def train_epoch(self, train_loader, epoch):
         """
-        训练一个epoch
+        Train for one epoch
         
-        参数:
-            train_loader: 训练数据加载器
-            epoch: 当前epoch
+        Args:
+            train_loader: Training data loader
+            epoch: Current epoch
             
-        返回:
-            平均训练损失
+        Returns:
+            Average training loss
         """
         self.model.train()
         total_loss = 0.0
         
-        # 进度记录
+        # Progress recording
         start_time = time.time()
         batch_count = len(train_loader)
-        log_interval = max(batch_count // 10, 1)  # 每10%的批次记录一次
+        log_interval = max(batch_count // 10, 1)  # Log every 10% of batches
         
-        # 遍历批次
+        # Iterate through batches
         for i, batch in enumerate(train_loader):
-            # 获取数据
+            # Get data
             time_series = batch['time_series'].to(self.device)
             material_feature = batch['material_feature'].to(self.device)
             target = batch['target'].to(self.device)
             attention_mask = batch['attention_mask'].to(self.device)
             
-            # 前向传播
+            # Forward propagation
             self.optimizer.zero_grad()
             predicted, _ = self.model(time_series, material_feature, attention_mask)
             
-            # 计算损失
+            # Compute loss
             loss = self.criterion(predicted, target)
             
-            # 反向传播
+            # Backward propagation
             loss.backward()
             
-            # 梯度裁剪
+            # Gradient clipping
             if self.config.get('gradient_clip_val', 0) > 0:
                 torch.nn.utils.clip_grad_norm_(
                     self.model.parameters(), 
                     self.config['gradient_clip_val']
                 )
             
-            # 更新参数
+            # Update parameters
             self.optimizer.step()
             
-            # 累加损失
+            # Accumulate loss
             total_loss += loss.item()
             
-            # 记录进度
+            # Record progress
             if (i + 1) % log_interval == 0:
                 elapsed = time.time() - start_time
                 self.logger.info(
@@ -160,15 +160,15 @@ class FatigueTrainer:
                     f"Time: {elapsed:.2f}s"
                 )
             
-            # 执行批次结束回调
+            # Execute batch end callback
             if self.on_batch_end_callback:
                 self.on_batch_end_callback(epoch, i, batch_count, loss.item())
         
-        # 计算平均损失
+        # Calculate average loss
         avg_loss = total_loss / batch_count
-        self.logger.info(f"Epoch {epoch+1} 完成，平均训练损失: {avg_loss:.6f}")
+        self.logger.info(f"Epoch {epoch+1} completed, average training loss: {avg_loss:.6f}")
         
-        # 执行轮次结束回调
+        # Execute epoch end callback
         if self.on_epoch_end_callback:
             self.on_epoch_end_callback(epoch, avg_loss)
         
@@ -176,14 +176,14 @@ class FatigueTrainer:
     
     def evaluate(self, test_loader, epoch):
         """
-        在测试集上评估模型
+        Evaluate model on test set
         
-        参数:
-            test_loader: 测试数据加载器
-            epoch: 当前epoch
+        Args:
+            test_loader: Test data loader
+            epoch: Current epoch
             
-        返回:
-            平均测试损失和评估指标
+        Returns:
+            Average test loss and evaluation metrics
         """
         self.model.eval()
         total_loss = 0.0
@@ -192,44 +192,44 @@ class FatigueTrainer:
         
         with torch.no_grad():
             for batch in test_loader:
-                # 获取数据
+                # Get data
                 time_series = batch['time_series'].to(self.device)
                 material_feature = batch['material_feature'].to(self.device)
                 target = batch['target'].to(self.device)
                 attention_mask = batch['attention_mask'].to(self.device)
                 
-                # 前向传播
+                # Forward propagation
                 predicted, _ = self.model(time_series, material_feature, attention_mask)
                 
-                # 计算损失
+                # Compute loss
                 loss = self.criterion(predicted, target)
                 total_loss += loss.item()
                 
-                # 收集预测和目标值
+                # Collect predictions and target values
                 all_targets.extend(target.cpu().numpy())
                 all_preds.extend(predicted.cpu().numpy())
         
-        # 计算平均损失和评估指标
+        # Calculate average loss and evaluation metrics
         batch_count = len(test_loader)
         avg_loss = total_loss / batch_count
         
-        # 转换为NumPy数组
+        # Convert to NumPy arrays
         all_targets = np.array(all_targets)
         all_preds = np.array(all_preds)
         
-        # 计算评估指标
+        # Calculate evaluation metrics
         mse = mean_squared_error(all_targets, all_preds)
         mae = mean_absolute_error(all_targets, all_preds)
         r2 = r2_score(all_targets, all_preds)
         rmse = np.sqrt(mse)
         
-        # 记录日志
+        # Log results
         self.logger.info(
-            f"测试结果 - Epoch {epoch+1}, Loss: {avg_loss:.6f}, MSE: {mse:.6f}, "
+            f"Test results - Epoch {epoch+1}, Loss: {avg_loss:.6f}, MSE: {mse:.6f}, "
             f"MAE: {mae:.6f}, R2: {r2:.6f}, RMSE: {rmse:.6f}"
         )
         
-        # 记录到TensorBoard
+        # Record to TensorBoard
         if self.writer:
             self.writer.add_scalar('Loss/Test', avg_loss, epoch)
             self.writer.add_scalar('Metrics/MSE', mse, epoch)
@@ -237,11 +237,11 @@ class FatigueTrainer:
             self.writer.add_scalar('Metrics/R2', r2, epoch)
             self.writer.add_scalar('Metrics/RMSE', rmse, epoch)
         
-        # 执行测试结束回调
+        # Execute test end callback
         if self.on_test_end_callback:
             self.on_test_end_callback(epoch, avg_loss, mse, mae, r2, rmse)
         
-        # 返回测试结果
+        # Return test results
         metrics = {
             'loss': avg_loss,
             'mse': mse,
@@ -256,15 +256,15 @@ class FatigueTrainer:
     
     def save_checkpoint(self, epoch, val_loss, metrics, is_best):
         """
-        保存检查点
+        Save checkpoint
         
-        参数:
-            epoch: 当前epoch
-            val_loss: 验证损失
-            metrics: 验证指标
-            is_best: 是否是目前最佳模型
+        Args:
+            epoch: Current epoch
+            val_loss: Validation loss
+            metrics: Validation metrics
+            is_best: Whether this is the best model so far
         """
-        # 创建检查点字典
+        # Create checkpoint dictionary
         checkpoint = {
             'epoch': epoch,
             'model_state_dict': self.model.state_dict(),
@@ -273,118 +273,118 @@ class FatigueTrainer:
             'val_loss': val_loss,
             'metrics': metrics,
             'config': self.config,
-            'data_type': self.data_type  # 在检查点中保存数据类型
+            'data_type': self.data_type  # Save data type in checkpoint
         }
         
-        # 获取数据类型前缀
+        # Get data type prefix
         data_type_str = f"_{self.data_type}" if self.data_type else ""
         
-        # 保存检查点
+        # Save checkpoint
         try:
-            # 保存最新检查点
+            # Save latest checkpoint
             checkpoint_path = os.path.join(self.config['save_dir'], f'checkpoint_epoch_{epoch+1}{data_type_str}.pth')
             torch.save(checkpoint, checkpoint_path)
-            self.logger.info(f"保存检查点到 {checkpoint_path}")
+            self.logger.info(f"Saving checkpoint to {checkpoint_path}")
             
-            # 如果是最佳模型则保存
+            # Save if it's the best model
             if is_best:
                 best_model_path = os.path.join(self.config['save_dir'], f'best_model{data_type_str}.pth')
                 torch.save(checkpoint, best_model_path)
-                self.logger.info(f"保存最佳模型到 {best_model_path}")
+                self.logger.info(f"Saving best model to {best_model_path}")
                 
         except Exception as e:
-            self.logger.error(f"保存检查点时出错: {e}")
+            self.logger.error(f"Error saving checkpoint: {e}")
             raise
     
     def load_checkpoint(self, checkpoint_path):
         """
-        加载检查点
+        Load checkpoint
         
-        参数:
-            checkpoint_path: 检查点路径
+        Args:
+            checkpoint_path: Path to checkpoint
             
-        返回:
-            加载的epoch
+        Returns:
+            Loaded epoch
         """
-        self.logger.info(f"从 {checkpoint_path} 加载检查点")
+        self.logger.info(f"Loading checkpoint from {checkpoint_path}")
         
-        # 定义加载方法列表，按优先级尝试
+        # Define list of loading methods, try in priority order
         load_methods = [
-            # 方法1: 标准加载 PyTorch 2.0+
+            # Method 1: Standard loading PyTorch 2.0+
             lambda: torch.load(checkpoint_path, map_location=self.device, weights_only=False),
-            # 方法2: 标准加载 PyTorch 1.x
+            # Method 2: Standard loading PyTorch 1.x
             lambda: torch.load(checkpoint_path, map_location=self.device),
-            # 方法3: 使用pickle
+            # Method 3: Using pickle
             lambda: torch.load(checkpoint_path, map_location=self.device, pickle_module=__import__('pickle')),
-            # 方法4: 使用safe_globals
+            # Method 4: Using safe_globals
             lambda: self._load_with_safe_globals(checkpoint_path)
         ]
         
-        # 尝试所有加载方法
+        # Try all loading methods
         checkpoint = None
         exception_messages = []
         
         for method_idx, load_method in enumerate(load_methods):
             try:
                 checkpoint = load_method()
-                self.logger.info(f"使用方法{method_idx+1}成功加载检查点")
+                self.logger.info(f"Successfully loaded checkpoint using method {method_idx+1}")
                 break
             except Exception as e:
-                exception_messages.append(f"方法{method_idx+1}失败: {e}")
+                exception_messages.append(f"Method {method_idx+1} failed: {e}")
                 continue
         
         if checkpoint is None:
-            error_msg = "所有加载方法都失败: " + "; ".join(exception_messages)
+            error_msg = "All loading methods failed: " + "; ".join(exception_messages)
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
         
-        # 检查检查点数据结构
+        # Check checkpoint data structure
         required_keys = ['model_state_dict', 'optimizer_state_dict']
         for key in required_keys:
             if key not in checkpoint:
-                self.logger.warning(f"检查点中缺少关键字 '{key}'，尝试推断内容...")
+                self.logger.warning(f"Checkpoint missing key '{key}', attempting to infer content...")
                 
-                # 如果检查点直接是模型状态字典
+                # If checkpoint is directly a model state dictionary
                 if key == 'model_state_dict' and all(k in checkpoint for k in next(self.model.parameters()).keys()):
-                    self.logger.info("检查点似乎直接是模型状态字典")
+                    self.logger.info("Checkpoint appears to be directly a model state dictionary")
                     checkpoint = {'model_state_dict': checkpoint, 'optimizer_state_dict': self.optimizer.state_dict(), 
                                  'scheduler_state_dict': self.scheduler.state_dict(), 'val_loss': float('inf'), 'epoch': -1}
                     break
         
-        # 加载模型状态
+        # Load model state
         try:
             self.model.load_state_dict(checkpoint['model_state_dict'])
         except Exception as e:
-            self.logger.warning(f"加载模型状态失败: {e}，尝试部分加载...")
-            # 尝试部分加载
+            self.logger.warning(f"Failed to load model state: {e}, attempting partial loading...")
+            # Try partial loading
             model_dict = self.model.state_dict()
             pretrained_dict = {k: v for k, v in checkpoint['model_state_dict'].items() if k in model_dict and v.shape == model_dict[k].shape}
             model_dict.update(pretrained_dict)
             self.model.load_state_dict(model_dict)
-            self.logger.info(f"成功加载 {len(pretrained_dict)}/{len(model_dict)} 层")
+            self.logger.info(f"Successfully loaded {len(pretrained_dict)}/{len(model_dict)} layers")
         
-        # 加载优化器状态
+        # Load optimizer state
         if 'optimizer_state_dict' in checkpoint:
             try:
                 self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
             except Exception as e:
-                self.logger.warning(f"加载优化器状态失败: {e}，使用当前优化器状态")
+                self.logger.warning(f"Failed to load optimizer state: {e}, using current optimizer state")
         
-        # 加载调度器状态
+        # Load scheduler state
         if 'scheduler_state_dict' in checkpoint:
             try:
                 self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
             except Exception as e:
-                self.logger.warning(f"加载调度器状态失败: {e}，使用当前调度器状态")
+                self.logger.warning(f"Failed to load scheduler state: {e}, using current scheduler state")
         
-        # 恢复其他状态
+        # Restore other states
         if 'val_loss' in checkpoint:
             self.best_val_loss = checkpoint['val_loss']
         
         return checkpoint.get('epoch', -1)
     
     def _load_with_safe_globals(self, checkpoint_path):
-        """使用safe_globals加载检查点"""
+        """Load checkpoint using safe_globals"""
         import numpy as np
         from torch.serialization import safe_globals
         with safe_globals([np.core.multiarray.scalar]):
@@ -392,110 +392,110 @@ class FatigueTrainer:
     
     def train(self, train_loader, test_loader=None, resume_from=None, data_type=None):
         """
-        训练模型
+        Train model
         
-        参数:
-            train_loader: 训练数据加载器
-            test_loader: 测试数据加载器（用于评估）
-            resume_from: 从检查点恢复训练（可选）
-            data_type: 训练数据类型 ('strain' 或 'stress')
+        Args:
+            train_loader: Training data loader
+            test_loader: Test data loader (for evaluation)
+            resume_from: Resume training from checkpoint (optional)
+            data_type: Training data type ('strain' or 'stress')
             
-        返回:
-            训练历史记录
+        Returns:
+            Training history
         """
-        # 设置数据类型
+        # Set data type
         self.data_type = data_type
         
-        # 记录历史
+        # Record history
         history = {
             'train_loss': [],
             'test_loss': [],
             'test_metrics': [],
-            'data_type': data_type  # 在历史记录中添加数据类型
+            'data_type': data_type  # Add data type to history
         }
         
-        # 设置起始epoch
+        # Set starting epoch
         start_epoch = 0
         
-        # 从检查点恢复训练
+        # Resume training from checkpoint
         if resume_from and os.path.exists(resume_from):
             start_epoch = self.load_checkpoint(resume_from) + 1
-            self.logger.info(f"从epoch {start_epoch} 恢复训练")
+            self.logger.info(f"Resuming training from epoch {start_epoch}")
         
-        # 训练循环
+        # Training loop
         num_epochs = self.config['epochs']
-        self.logger.info(f"开始训练，共 {num_epochs} 轮")
+        self.logger.info(f"Starting training, total {num_epochs} epochs")
         
         for epoch in range(start_epoch, num_epochs):
-            # 训练一个epoch
+            # Train for one epoch
             train_loss = self.train_epoch(train_loader, epoch)
             history['train_loss'].append(train_loss)
             
-            # 记录到tensorboard
+            # Record to TensorBoard
             if self.writer:
                 self.writer.add_scalar('Loss/train', train_loss, epoch)
             
-            # 在测试集上评估
+            # Evaluate on test set
             if test_loader is not None:
                 test_loss, test_metrics = self.evaluate(test_loader, epoch)
                 history['test_loss'].append(test_loss)
                 history['test_metrics'].append(test_metrics)
             
-                # 更新学习率
+                # Update learning rate
                 self.scheduler.step(test_loss)
                 
-                # 检查是否需要保存模型
+                # Check if model needs to be saved
                 if test_loss < self.best_val_loss:
                     self.best_val_loss = test_loss
                     self.best_epoch = epoch
                     self.epochs_without_improvement = 0
                     
-                    # 保存模型
+                    # Save model
                     if 'save_dir' in self.config:
                         os.makedirs(self.config['save_dir'], exist_ok=True)
                         checkpoint_path = os.path.join(self.config['save_dir'], f'best_model{self.data_type}.pth')
                         self.save_checkpoint(epoch, test_loss, test_metrics, True)
-                        self.logger.info(f"保存最佳模型至 {checkpoint_path}")
+                        self.logger.info(f"Saving best model to {checkpoint_path}")
                 else:
                     self.epochs_without_improvement += 1
-                    self.logger.info(f"测试损失未改善，已经 {self.epochs_without_improvement} 轮")
+                    self.logger.info(f"Test loss not improved, {self.epochs_without_improvement} epochs without improvement")
                     
-                    # 早停
+                    # Early stopping
                     if self.epochs_without_improvement >= self.early_stop_patience:
-                        self.logger.info(f"早停触发，停止训练")
+                        self.logger.info(f"Early stopping triggered, stopping training")
                         break
             
-                # 检查是否为最佳模型
+                # Check if it's the best model
                 is_best = test_loss < self.best_val_loss
                 if is_best:
                     self.best_val_loss = test_loss
                     self.best_epoch = epoch
                     self.epochs_without_improvement = 0
                 
-                # 修改为每10个epoch保存一次检查点或是最佳模型时保存
+                # Save checkpoint every 10 epochs or when it's the best model
                 if (epoch + 1) % 10 == 0 or is_best:
                     self.save_checkpoint(epoch, test_loss, test_metrics, is_best)
                     if (epoch + 1) % 10 == 0:
-                        self.logger.info(f"每10个epoch定期保存检查点，当前epoch: {epoch+1}")
+                        self.logger.info(f"Periodic checkpoint save every 10 epochs, current epoch: {epoch+1}")
         
-        # 加载最佳模型
+        # Load best model
         best_model_path = os.path.join(self.config['save_dir'], f'best_model{self.data_type}.pth')
         if os.path.exists(best_model_path):
             self.load_checkpoint(best_model_path)
-            self.logger.info("加载最佳模型进行最终测试")
+            self.logger.info("Loading best model for final testing")
         
-        # 在测试集上进行最终评估
+        # Final evaluation on test set
         if test_loader is not None:
             test_loss, test_metrics = self.evaluate(test_loader, epoch)
             history['final_test_loss'] = test_loss
             history['final_test_metrics'] = test_metrics
-            self.logger.info(f"最终测试完成，损失: {test_loss:.6f}")
+            self.logger.info(f"Final testing completed, loss: {test_loss:.6f}")
         
-        # 清理
+        # Cleanup
         if self.writer:
             self.writer.close()
         
-        # 执行训练结束回调
+        # Execute training end callback
         if self.on_training_end_callback:
             self.on_training_end_callback(history)
         

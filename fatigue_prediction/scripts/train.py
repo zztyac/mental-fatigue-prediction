@@ -1,5 +1,5 @@
 """
-主训练脚本 - 用于训练模型并预测疲劳寿命
+Main Training Script - For training models and predicting fatigue life
 """
 
 import os
@@ -13,7 +13,7 @@ import pandas as pd
 import json
 from datetime import datetime
 
-# 添加项目根目录到系统路径
+# Add project root directory to system path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from models.transformer_model import FatigueTransformer
@@ -21,63 +21,63 @@ from training.trainer import FatigueTrainer
 from data.data_loader import FatigueDataLoader
 from configs.config import DATA_CONFIG, MODEL_CONFIG, TRAIN_CONFIG
 
-# 设置日志
+# Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def parse_args():
-    """解析命令行参数"""
-    parser = argparse.ArgumentParser(description='训练疲劳寿命预测模型')
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(description='Train fatigue life prediction model')
     
-    # 数据相关参数
+    # Data-related parameters
     parser.add_argument('--data_type', type=str, default='strain', choices=['strain', 'stress'],
-                        help='使用的数据类型: strain(应变控制), stress(应力控制)')
-    parser.add_argument('--batch_size', type=int, default=None, help='批次大小')
-    parser.add_argument('--num_workers', type=int, default=None, help='数据加载线程数')
+                        help='Data type to use: strain (strain-controlled), stress (stress-controlled)')
+    parser.add_argument('--batch_size', type=int, default=None, help='Batch size')
+    parser.add_argument('--num_workers', type=int, default=None, help='Number of data loading threads')
     
-    # 模型相关参数
-    parser.add_argument('--d_model', type=int, default=None, help='模型维度')
-    parser.add_argument('--nhead', type=int, default=None, help='注意力头数')
-    parser.add_argument('--num_layers', type=int, default=None, help='编码器层数')
+    # Model-related parameters
+    parser.add_argument('--d_model', type=int, default=None, help='Model dimension')
+    parser.add_argument('--nhead', type=int, default=None, help='Number of attention heads')
+    parser.add_argument('--num_layers', type=int, default=None, help='Number of encoder layers')
     
-    # 训练相关参数
-    parser.add_argument('--epochs', type=int, default=None, help='训练轮数')
-    parser.add_argument('--lr', type=float, default=None, help='学习率')
-    parser.add_argument('--weight_decay', type=float, default=None, help='权重衰减')
-    parser.add_argument('--resume', type=str, default=None, help='从检查点恢复训练')
+    # Training-related parameters
+    parser.add_argument('--epochs', type=int, default=None, help='Number of training epochs')
+    parser.add_argument('--lr', type=float, default=None, help='Learning rate')
+    parser.add_argument('--weight_decay', type=float, default=None, help='Weight decay')
+    parser.add_argument('--resume', type=str, default=None, help='Resume training from checkpoint')
     
-    # 运行模式
+    # Running mode
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'],
-                        help='运行模式: train(训练), test(测试)')
-    parser.add_argument('--model_path', type=str, default=None, help='测试或预测模式下的模型路径')
+                        help='Running mode: train (training), test (testing)')
+    parser.add_argument('--model_path', type=str, default=None, help='Model path for test or prediction mode')
 
-    parser.add_argument('--output_dir', type=str, default='/data/coding/metal_fatigue/results', help='结果保存目录')
+    parser.add_argument('--output_dir', type=str, default='/data/coding/metal_fatigue/results', help='Result save directory')
     
-    # GPU相关参数
-    parser.add_argument('--use_gpu', action='store_true', default=None, help='是否使用GPU')
+    # GPU-related parameters
+    parser.add_argument('--use_gpu', action='store_true', default=None, help='Whether to use GPU')
     
     return parser.parse_args()
 
 def update_config(config, args, config_name):
-    """使用命令行参数更新配置"""
-    # 获取命令行参数字典
+    """Update configuration using command line arguments"""
+    # Get command line arguments dictionary
     args_dict = vars(args)
     
-    # 更新配置
+    # Update configuration
     for key, value in args_dict.items():
         if value is not None and key in config:
-            logger.info(f"更新 {config_name} 配置: {key} = {value}")
+            logger.info(f"Updating {config_name} configuration: {key} = {value}")
             config[key] = value
     
     return config
 
 def setup_output_dir(args):
-    """设置输出目录"""
+    """Setup output directory"""
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     output_dir = os.path.join(args.output_dir, f"{args.data_type}_{timestamp}")
     os.makedirs(output_dir, exist_ok=True)
     
-    # 创建子目录
+    # Create subdirectories
     checkpoints_dir = os.path.join(output_dir, 'checkpoints')
     logs_dir = os.path.join(output_dir, 'logs')
     plots_dir = os.path.join(output_dir, 'plots')
@@ -86,14 +86,14 @@ def setup_output_dir(args):
     os.makedirs(logs_dir, exist_ok=True)
     os.makedirs(plots_dir, exist_ok=True)
     
-    # 更新训练配置
+    # Update training configuration
     TRAIN_CONFIG['save_dir'] = checkpoints_dir
     TRAIN_CONFIG['logging_dir'] = logs_dir
     
     return output_dir, plots_dir
 
 def save_configs(output_dir, data_config, model_config, train_config):
-    """保存配置到文件"""
+    """Save configurations to file"""
     configs = {
         'data_config': data_config,
         'model_config': model_config,
@@ -104,16 +104,16 @@ def save_configs(output_dir, data_config, model_config, train_config):
     with open(config_path, 'w') as f:
         json.dump(configs, f, indent=4)
     
-    logger.info(f"配置保存到 {config_path}")
+    logger.info(f"Configurations saved to {config_path}")
 
 def train_model(args):
     """Train model"""
-    # 更新配置
+    # Update configurations
     data_config = update_config(DATA_CONFIG.copy(), args, 'DATA')
     model_config = update_config(MODEL_CONFIG.copy(), args, 'MODEL')
     train_config = update_config(TRAIN_CONFIG.copy(), args, 'TRAIN')
     
-    # 设置输出目录
+    # Setup output directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = os.path.join(args.output_dir, f'{args.data_type}_train_{timestamp}')
     checkpoints_dir = os.path.join(output_dir, 'checkpoints')
@@ -123,30 +123,30 @@ def train_model(args):
     os.makedirs(checkpoints_dir, exist_ok=True)
     os.makedirs(plots_dir, exist_ok=True)
     
-    # 保存配置
+    # Save configurations
     save_configs(output_dir, data_config, model_config, train_config)
     
-    # 加载数据
-    logger.info(f"正在加载 {args.data_type} 数据...")
+    # Load data
+    logger.info(f"Loading {args.data_type} data...")
     data_loader = FatigueDataLoader(data_config)
     
     train_loader, test_loader, file_names = data_loader.prepare_dataloaders(args.data_type)
     
-    # 创建模型
-    logger.info("正在创建模型...")
+    # Create model
+    logger.info("Creating model...")
     model = FatigueTransformer(model_config)
     
-    # 打印模型信息
+    # Print model information
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    logger.info(f"模型总参数量: {total_params}, 可训练参数量: {trainable_params}")
+    logger.info(f"Total model parameters: {total_params}, trainable parameters: {trainable_params}")
     
-    # 初始化训练器
-    logger.info("正在初始化训练器...")
+    # Initialize trainer
+    logger.info("Initializing trainer...")
     trainer = FatigueTrainer(model, train_config)
     
-    # 训练模型
-    logger.info("开始训练模型...")
+    # Train model
+    logger.info("Starting model training...")
     history = trainer.train(
         train_loader=train_loader,
         test_loader=test_loader,
@@ -154,18 +154,18 @@ def train_model(args):
         data_type=args.data_type
     )
     
-    # 绘制训练历史
-    logger.info("绘制训练历史...")
+    # Plot training history
+    logger.info("Plotting training history...")
     plot_training_history(history, plots_dir)
     
-    # 绘制预测结果
-    logger.info("绘制预测结果...")
+    # Plot prediction results
+    logger.info("Plotting prediction results...")
     if 'test_metrics' in history:
         plot_predictions(history['test_metrics'], plots_dir)
     
-    # 保存训练结果和模型
+    # Save training results and model
     model_save_path = os.path.join(checkpoints_dir, f'model_{timestamp}.pth')
-    logger.info(f"保存模型到: {model_save_path}")
+    logger.info(f"Saving model to: {model_save_path}")
     
     torch.save({
         'model_state_dict': model.state_dict(),
@@ -175,54 +175,54 @@ def train_model(args):
         'timestamp': timestamp
     }, model_save_path)
     
-    logger.info(f"训练完成！结果保存在 {output_dir}")
+    logger.info(f"Training completed! Results saved in {output_dir}")
     
     return model, history, output_dir
 
 def test_model(args):
-    """测试模型"""
-    # 加载数据
-    logger.info(f"正在加载 {args.data_type} 数据...")
+    """Test model"""
+    # Load data
+    logger.info(f"Loading {args.data_type} data...")
     data_loader = FatigueDataLoader(DATA_CONFIG)
     
     _, _, test_loader, file_names = data_loader.prepare_dataloaders(args.data_type)
     
-    # 加载模型
-    logger.info(f"正在加载模型 {args.model_path}...")
+    # Load model
+    logger.info(f"Loading model {args.model_path}...")
     device = torch.device('cuda' if torch.cuda.is_available() and args.use_gpu else 'cpu')
     checkpoint = torch.load(args.model_path, map_location=device)
     
-    # 创建模型
+    # Create model
     model = FatigueTransformer(MODEL_CONFIG)
     model.load_state_dict(checkpoint['model_state_dict'])
     model = model.to(device)
     
-    # 创建训练器
+    # Create trainer
     trainer = FatigueTrainer(model, TRAIN_CONFIG, device=device)
     
-    # 测试模型
-    logger.info("开始测试模型...")
+    # Test model
+    logger.info("Starting model testing...")
     test_loss, test_metrics = trainer.test(test_loader)
     
-    # 设置输出目录
+    # Setup output directory
     output_dir = os.path.join(args.output_dir, 'test_results')
     plots_dir = os.path.join(output_dir, 'plots')
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(plots_dir, exist_ok=True)
     
-    # 绘制预测结果
-    logger.info("绘制预测结果...")
+    # Plot prediction results
+    logger.info("Plotting prediction results...")
     plot_predictions(test_metrics, plots_dir)
     
-    # 保存测试结果
+    # Save test results
     result_path = os.path.join(output_dir, 'test_results.json')
     with open(result_path, 'w') as f:
-        # 去掉NumPy数组等无法序列化的对象
+        # Remove NumPy arrays and other non-serializable objects
         serializable_metrics = {k: v for k, v in test_metrics.items() 
                                if k not in ['predictions', 'targets']}
         json.dump(serializable_metrics, f, indent=4)
     
-    logger.info(f"测试完成！结果保存在 {output_dir}")
+    logger.info(f"Testing completed! Results saved in {output_dir}")
     
     return test_metrics
 
@@ -326,16 +326,16 @@ def plot_predictions(metrics, output_dir):
         results_df.to_csv(os.path.join(output_dir, 'prediction_results.csv'), index=False)
 
 def main():
-    """主函数"""
-    # 解析命令行参数
+    """Main function"""
+    # Parse command line arguments
     args = parse_args()
     
-    # 根据运行模式执行相应操作
+    # Execute corresponding operations based on running mode
     if args.mode == 'train':
         train_model(args)
     elif args.mode == 'test':
         if args.model_path is None:
-            logger.error("测试模式需要指定模型路径 (--model_path)")
+            logger.error("Test mode requires model path to be specified (--model_path)")
             return
         test_model(args)
 

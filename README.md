@@ -1,164 +1,164 @@
-# 金属多轴疲劳寿命预测系统
+# Metal Multi-Axial Fatigue Life Prediction System
 
-## 项目简介
+## Project Overview
 
-本系统是一个基于深度学习的金属多轴疲劳寿命预测平台，集成了多种先进的深度学习模型（CNN、LSTM、Transformer），通过分析材料特征和时序数据，实现对金属材料疲劳寿命的精确预测。系统提供了友好的Web界面，支持数据上传、模型训练、预测和结果可视化等功能。
+This system is a deep learning-based metal multi-axial fatigue life prediction platform that integrates multiple advanced deep learning models (CNN, LSTM, Transformer). By analyzing material features and time series data, it achieves accurate prediction of metal material fatigue life. The system provides a user-friendly Web interface supporting data upload, model training, prediction, and result visualization.
 
-## 功能特点
+## Table of Contents
 
-- 多模型支持：集成CNN、LSTM和Transformer等多种深度学习模型
-- 数据处理：支持应力数据和应变数据的预处理和特征工程
-- 模型对比：提供不同模型性能的对比分析和可视化
-- Web界面：直观的用户界面，支持交互式操作
-- 结果可视化：详细的预测结果展示和性能指标分析
-- 日志记录：完整的训练和预测过程日志
+- [Project Overview](#project-overview)
+- [Features](#features)
+- [Environment Setup](#environment-setup)
+- [Directory Structure](#directory-structure)
+- [Usage Guide](#usage-guide)
+  - [1. Starting the System](#1-starting-the-system)
+  - [2. Data Preparation](#2-data-preparation)
+  - [3. Model Training](#3-model-training)
+  - [4. Prediction Usage](#4-prediction-usage)
+  - [5. Model Comparison](#5-model-comparison)
+- [API Documentation](#api-documentation)
+- [FAQ](#faq)
+- [Maintenance and Updates](#maintenance-and-updates)
 
-## 系统要求
+## Features
 
-### 硬件要求
-- CPU: 推荐Intel i5/i7或同等性能处理器
-- 内存: 最少8GB，推荐16GB或以上
-- GPU: 推荐NVIDIA GPU（支持CUDA）用于模型训练
-- 存储空间: 至少10GB可用空间
+- **Multi-Model Support**: Integrates multiple deep learning models including CNN, LSTM, and Transformer
+- **Data Processing**: Supports preprocessing and feature engineering for stress and strain data
+- **Model Comparison**: Provides comparative analysis and visualization of different model performances
+- **Web Interface**: Intuitive user interface supporting interactive operations
+- **Result Visualization**: Detailed prediction result display and performance metric analysis
+- **Logging**: Complete logging of training and prediction processes
 
-### 软件要求
-- 操作系统: Linux（推荐Ubuntu 18.04或更高版本）
-- Python: 3.8或更高版本
-- CUDA: 11.0或更高版本（如使用GPU）
+## Environment Setup
 
-## 环境配置
-
-1. 创建虚拟环境：
+1. Create a virtual environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或
-.\venv\Scripts\activate  # Windows
+conda create -n mental python=3.10
 ```
 
-2. 安装依赖：
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## 目录结构
+## Directory Structure
 
 ```
 metal_fatigue/
-├── fatigue_prediction/    # 主预测模块
-│   ├── web/              # Web应用
-│   ├── models/           # 模型定义
-│   ├── data/             # 数据处理
-│   └── configs/          # 配置文件
-├── cnn/                  # CNN模型实现
-├── lstm/                 # LSTM模型实现
-├── utils/                # 工具函数
-├── dataset/              # 数据集目录
-│   ├── All data_Strain/  # 应变数据
-│   └── All data_Stress/  # 应力数据
-├── results/              # 结果输出
-├── uploads/              # 上传文件
-└── start.py             # 启动脚本
+├── fatigue_prediction/    # Main prediction module
+│   ├── web/              # Web application
+│   ├── models/           # Model definitions
+│   ├── data/             # Data processing
+│   └── configs/          # Configuration files
+├── cnn/                  # CNN model implementation
+├── lstm/                 # LSTM model implementation
+├── utils/                # Utility functions
+├── dataset/              # Dataset directory
+│   ├── All data_Strain/  # Strain data
+│   └── All data_Stress/  # Stress data
+├── results/              # Result output
+├── uploads/              # Uploaded files
+└── start.py             # Startup script
 ```
 
-## 使用说明
+## Usage Guide
 
-### 1. 启动系统
+### 1. Starting the System
 
 ```bash
 python start.py
 ```
 
-默认配置：
-- 主机: localhost
-- 端口: 5000
-- 调试模式: 开启
+Default configuration:
+- Host: localhost
+- Port: 5000
+- Debug mode: Enabled
 
-可选参数：
-- `--host`: 指定主机地址
-- `--port`: 指定端口号
-- `--debug`: 启用调试模式
-- `--log-level`: 设置日志级别（DEBUG/INFO/WARNING/ERROR/CRITICAL）
+Optional parameters:
+- `--host`: Specify host address
+- `--port`: Specify port number
+- `--debug`: Enable debug mode
+- `--log-level`: Set log level (DEBUG/INFO/WARNING/ERROR/CRITICAL)
 
-### 2. 数据准备
+### 2. Data Preparation
 
-1. 数据格式要求：
-   - 应力数据：CSV格式，包含时间序列应力数据
-   - 应变数据：CSV格式，包含时间序列应变数据
-   - 材料特征：CSV格式，包含材料基本特性参数
+1. Data format requirements:
+   - Stress data: CSV format containing time series stress data
+   - Strain data: CSV format containing time series strain data
+   - Material features: CSV format containing basic material property parameters
 
-2. 数据目录结构：
-   - 将应力数据放置在 `dataset/All data_Stress/` 目录
-   - 将应变数据放置在 `dataset/All data_Strain/` 目录
+2. Data directory structure:
+   - Place stress data in `dataset/All data_Stress/` directory
+   - Place strain data in `dataset/All data_Strain/` directory
 
-### 3. 模型训练
+### 3. Model Training
 
-1. 通过Web界面上传训练数据
-2. 选择要使用的模型（CNN/LSTM/Transformer）
-3. 设置训练参数（学习率、批次大小、训练轮数等）
-4. 启动训练并监控进度
+1. Upload training data through the Web interface
+2. Select the model to use (CNN/LSTM/Transformer)
+3. Set training parameters (learning rate, batch size, number of epochs, etc.)
+4. Start training and monitor progress
 
-### 4. 预测使用
+### 4. Prediction Usage
 
-1. 上传待预测的数据
-2. 选择已训练好的模型
-3. 执行预测
-4. 查看预测结果和可视化图表
+1. Upload data to be predicted
+2. Select a trained model
+3. Execute prediction
+4. View prediction results and visualization charts
 
-### 5. 模型对比
+### 5. Model Comparison
 
-使用模型对比工具：
+Use the model comparison tool:
 ```bash
 python model_comparison.py
 ```
 
-## API文档
+## API Documentation
 
-系统提供以下主要API端点：
+The system provides the following main API endpoints:
 
-1. 数据管理
-   - POST `/api/upload`: 上传数据文件
-   - GET `/api/data/list`: 获取数据列表
+1. **Data Management**
+   - POST `/api/upload`: Upload data files
+   - GET `/api/data/list`: Get data list
 
-2. 模型操作
-   - POST `/api/model/train`: 启动模型训练
-   - GET `/api/model/status`: 获取训练状态
-   - POST `/api/model/predict`: 执行预测
+2. **Model Operations**
+   - POST `/api/model/train`: Start model training
+   - GET `/api/model/status`: Get training status
+   - POST `/api/model/predict`: Execute prediction
 
-3. 结果查询
-   - GET `/api/results`: 获取预测结果
-   - GET `/api/results/visualization`: 获取可视化数据
+3. **Result Queries**
+   - GET `/api/results`: Get prediction results
+   - GET `/api/results/visualization`: Get visualization data
 
-## 常见问题
+## FAQ
 
-1. **Q: 系统启动失败怎么办？**
-   A: 检查以下几点：
-   - 确保所有依赖都已正确安装
-   - 检查端口是否被占用
-   - 查看日志文件中的错误信息
+1. **Q: What should I do if the system fails to start?**
+   A: Check the following:
+   - Ensure all dependencies are correctly installed
+   - Check if the port is occupied
+   - View error messages in log files
 
-2. **Q: 训练过程很慢怎么办？**
-   A: 可以：
-   - 使用GPU加速（如果可用）
-   - 减小批次大小
-   - 调整模型参数
-   - 减少训练数据量
+2. **Q: What should I do if training is very slow?**
+   A: You can:
+   - Use GPU acceleration (if available)
+   - Reduce batch size
+   - Adjust model parameters
+   - Reduce training data volume
 
-3. **Q: 预测结果不准确怎么办？**
-   A: 尝试以下方法：
-   - 增加训练数据量
-   - 调整模型超参数
-   - 尝试不同的模型架构
-   - 检查数据预处理步骤
+3. **Q: What should I do if prediction results are inaccurate?**
+   A: Try the following methods:
+   - Increase training data volume
+   - Adjust model hyperparameters
+   - Try different model architectures
+   - Check data preprocessing steps
 
-## 维护和更新
+## Maintenance and Updates
 
-### 日志管理
-- 日志文件位置：`fatigue_prediction/logs/`
-- 定期检查日志文件大小
-- 配置日志轮转策略
+### Log Management
+- Log file location: `fatigue_prediction/logs/`
+- Regularly check log file sizes
+- Configure log rotation strategy
 
-### 数据备份
-- 定期备份训练数据
-- 备份模型检查点
-- 保存重要的预测结果
+### Data Backup
+- Regularly backup training data
+- Backup model checkpoints
+- Save important prediction results

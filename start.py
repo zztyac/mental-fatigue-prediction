@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-金属多轴疲劳寿命预测系统 - 快速启动脚本
+Metal Multi-Axial Fatigue Life Prediction System - Quick Start Script
 """
 
 import os
@@ -9,27 +9,27 @@ import sys
 import subprocess
 
 if __name__ == "__main__":
-    # 获取当前脚本所在目录
+    # Get the directory where the current script is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # 命令行参数
+    # Command line arguments
     cmd_args = sys.argv[1:] if len(sys.argv) > 1 else []
     
-    # 构建启动命令
+    # Build startup command
     cmd = [sys.executable, os.path.join(current_dir, "fatigue_prediction", "run.py"), "--debug"]
     cmd.extend(cmd_args)
     
-    # 打印提示信息
-    print("正在启动金属多轴疲劳寿命预测系统...")
-    print(f"命令: {' '.join(cmd)}")
-    print("\n按下 Ctrl+C 停止服务器\n")
+    # Print prompt information
+    print("Starting Metal Multi-Axial Fatigue Life Prediction System...")
+    print(f"Command: {' '.join(cmd)}")
+    print("\nPress Ctrl+C to stop the server\n")
     
     try:
-        # 启动应用
+        # Start application
         subprocess.run(cmd)
     except KeyboardInterrupt:
-        print("\n服务器已停止")
+        print("\nServer stopped")
         sys.exit(0)
     except Exception as e:
-        print(f"启动失败: {e}")
+        print(f"Failed to start: {e}")
         sys.exit(1) 

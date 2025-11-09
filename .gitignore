@@ -1,6 +1,7 @@
 # 忽略数据文件
 *.csv
 *.CSV
+*.zip
 
 # 忽略模型文件
 *.pth
@@ -51,6 +52,7 @@ saved_models/
 
 # 忽略数据目录（如果有）
 data/
+dataset/
 datasets/
 
 # 忽略输出目录
