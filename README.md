@@ -8,6 +8,8 @@
 ## 📋 Project Overview
 
 This system is a deep learning-based metal multi-axial fatigue life prediction platform that integrates multiple advanced deep learning models (CNN, LSTM, Transformer). By analyzing material features and time series data, it achieves accurate prediction of metal material fatigue life. The system provides a user-friendly Web interface supporting data upload, model training, prediction, and result visualization.
+![Uploading image.png…]()
+
 
 ## 📑 Table of Contents
 
